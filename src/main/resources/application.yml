@@ -1,0 +1,14 @@
+spring:
+  main:
+    banner-mode: off
+  r2dbc:
+    name: docs
+    url: r2dbc:postgresql://localhost:5432/document?currentSchema=public
+    username: postgres
+    password: postgres
+  liquibase:
+    enabled: false
+    change-log: classpath:db/changelog/changelog.xml
+    url: jdbc:postgresql://localhost:5432/document?currentSchema=public
+    user: postgres
+    password: postgres
