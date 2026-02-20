@@ -1,8 +1,8 @@
 package com.personal.assignment.service;
 
+import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.Document;
-import com.personal.assignment.model.request.DocumentCreationBody;
-import com.personal.assignment.model.request.Paging;
+import com.personal.assignment.model.request.impl.DocumentCreationBody;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import java.util.Set;
@@ -22,5 +22,5 @@ public interface DocumentService {
 
     Mono<DocumentWithHistory> getDocumentById(Long id);
 
-    Flux<Document> getDocuments(Paging paging);
+    Flux<Document> getDocuments(DocumentFilteredPaging filteredPaging);
 }

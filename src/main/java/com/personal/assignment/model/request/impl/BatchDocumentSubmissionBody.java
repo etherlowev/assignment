@@ -1,4 +1,4 @@
-package com.personal.assignment.model.request;
+package com.personal.assignment.model.request.impl;
 
 import java.util.Set;
 

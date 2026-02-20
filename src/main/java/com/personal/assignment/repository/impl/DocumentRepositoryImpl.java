@@ -6,7 +6,7 @@ import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
@@ -25,10 +25,10 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     }
 
     @Override
-    public Flux<Document> getPage(Paging paging) {
+    public Flux<Document> getPage(Criteria criteria, Paging paging) {
         return template.select(Document.class)
             .matching(
-                Query.query(Criteria.empty())
+                Query.query(criteria)
                     .limit(paging.getPageSize())
                     .offset(paging.getOffset())
                     .sort(paging.getSort())
@@ -62,14 +62,14 @@ public class DocumentRepositoryImpl implements DocumentRepository {
 
     @Override
     public Mono<Document> insertDocument(String author, String title,
-                                         DocumentStatus status, LocalDateTime dateCreated,
-                                         LocalDateTime dateUpdated) {
+                                         DocumentStatus status, ZonedDateTime dateCreated,
+                                         ZonedDateTime dateUpdated) {
         return template.insert(
             new Document.Builder()
                 .author(author)
                 .title(title)
                 .status(status)
-                .dateCreated(LocalDateTime.now())
+                .dateCreated(ZonedDateTime.now())
                 .build()
         );
     }

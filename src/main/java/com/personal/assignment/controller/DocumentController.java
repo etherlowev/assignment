@@ -1,12 +1,12 @@
 package com.personal.assignment.controller;
 
+import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import com.personal.assignment.service.DocumentService;
 import com.personal.assignment.model.Document;
-import com.personal.assignment.model.request.DocumentCreationBody;
-import com.personal.assignment.model.request.DocumentSubmissionBody;
-import com.personal.assignment.model.request.Paging;
+import com.personal.assignment.model.request.impl.DocumentCreationBody;
+import com.personal.assignment.model.request.impl.DocumentSubmissionBody;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -41,8 +41,8 @@ public class DocumentController {
     }
 
     @GetMapping("/list")
-    public Mono<ResponseEntity<List<Document>>> getDocuments(@ModelAttribute Paging paging) {
-        return documentService.getDocuments(paging)
+    public Mono<ResponseEntity<List<Document>>> getDocuments(@ModelAttribute DocumentFilteredPaging filteredPaging) {
+        return documentService.getDocuments(filteredPaging)
             .collectList()
             .map(document -> ResponseEntity.ok().body(document));
     }
@@ -58,6 +58,5 @@ public class DocumentController {
         return documentService.approveDocumentById(body.documentId(), body.initiator())
             .map(document -> ResponseEntity.ok().body(document));
     }
-
 
 }

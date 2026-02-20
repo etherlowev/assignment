@@ -6,7 +6,7 @@ import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.repository.ApprovalRepository;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.service.ApprovalService;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         return documentRepository.findById(documentId)
             .flatMap(document -> document == null ?
                 null :
-                approvalRepository.insertApproval(documentId, LocalDateTime.now())
+                approvalRepository.insertApproval(documentId, ZonedDateTime.now())
             )
             .hasElement()
             .map(exists -> exists ?

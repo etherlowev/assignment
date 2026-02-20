@@ -1,5 +1,6 @@
 package com.personal.assignment.model.request;
 
+import com.personal.assignment.enums.Direction;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,16 +30,19 @@ public class Paging implements Pageable {
 
     @Override
     public long getOffset() {
-        return (long) (page - 1) * perPage;
+        return Math.max(0, (long) (page - 1) * perPage);
     }
 
     @Override
     public @NonNull Sort getSort() {
-        return Sort.by(direction == Direction.ASC ? Sort.Order.asc(this.sort) : Sort.Order.desc(this.sort));
+        return this.getSortOr(Sort.unsorted());
     }
 
     @Override
     public @NonNull Sort getSortOr(@NonNull Sort sort) {
+        if (this.sort == null || this.direction == null) {
+            return sort;
+        }
         return Sort.by(direction == Direction.ASC ? Sort.Order.asc(this.sort) : Sort.Order.desc(this.sort));
     }
 
@@ -67,10 +71,6 @@ public class Paging implements Pageable {
 
     @Override
     public boolean hasPrevious() {
-        return false;
-    }
-
-    public enum Direction {
-        ASC, DESC
+        return page > 1;
     }
 }

@@ -2,8 +2,10 @@ package com.personal.assignment.model;
 
 import com.personal.assignment.enums.DocumentAction;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class History {
@@ -15,17 +17,18 @@ public class History {
     public static final String HISTORY_DOCUMENT_ACTION = "documentAction";
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final Long id;
 
     private final String initiator;
 
-    private final LocalDateTime actionDate;
+    private final ZonedDateTime actionDate;
 
     private final Long documentId;
 
     private final DocumentAction documentAction;
 
-    public History(Long id, String initiator, LocalDateTime actionDate,
+    public History(Long id, String initiator, ZonedDateTime actionDate,
                    Long documentId, DocumentAction documentAction) {
         this.id = id;
         this.initiator = initiator;
@@ -42,7 +45,7 @@ public class History {
         return initiator;
     }
 
-    public LocalDateTime getActionDate() {
+    public ZonedDateTime getActionDate() {
         return actionDate;
     }
 
@@ -63,7 +66,7 @@ public class History {
 
         private String initiator;
 
-        private LocalDateTime actionDate;
+        private ZonedDateTime actionDate;
 
         private Long documentId;
 
@@ -79,7 +82,7 @@ public class History {
             return this;
         }
 
-        public Builder actionDate(LocalDateTime actionDate) {
+        public Builder actionDate(ZonedDateTime actionDate) {
             this.actionDate = actionDate;
             return this;
         }

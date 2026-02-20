@@ -3,7 +3,8 @@ package com.personal.assignment.repository;
 import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,10 +16,10 @@ public interface DocumentRepository {
     Mono<Document> insertDocument(String author,
                                   String title,
                                   DocumentStatus status,
-                                  LocalDateTime dateCreated,
-                                  LocalDateTime dateUpdated);
+                                  ZonedDateTime dateCreated,
+                                  ZonedDateTime dateUpdated);
 
-    Flux<Document> getPage(Paging paging);
+    Flux<Document> getPage(Criteria criteria, Paging paging);
 
     Mono<Document> findById(Long id);
 

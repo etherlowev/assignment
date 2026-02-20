@@ -1,7 +1,7 @@
 package com.personal.assignment.controller;
 
 import com.personal.assignment.exception.EmptyBodyException;
-import com.personal.assignment.model.request.BatchDocumentSubmissionBody;
+import com.personal.assignment.model.request.impl.BatchDocumentSubmissionBody;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.service.DocumentService;
 import java.util.List;
@@ -23,9 +23,17 @@ public class DocumentBatchController {
     }
 
     @PostMapping("/submit")
-    public Mono<ResponseEntity<List<DocumentOpResult>>> submitDocument(@RequestBody BatchDocumentSubmissionBody body) {
+    public Mono<ResponseEntity<List<DocumentOpResult>>> submitDocument(
+        @RequestBody BatchDocumentSubmissionBody body) {
+
+        if (body == null) {
+            throw new EmptyBodyException("No input provided");
+        }
         if (body.documentIds().isEmpty()) {
             throw new EmptyBodyException("No documents to submit provided");
+        }
+        if (body.initiator() == null || body.initiator().isBlank()) {
+            throw new EmptyBodyException("No initiator provided");
         }
         return documentService.submitBatch(body.documentIds(), body.initiator())
             .collectList()
@@ -33,9 +41,17 @@ public class DocumentBatchController {
     }
 
     @PostMapping("/approve")
-    public Mono<ResponseEntity<List<DocumentOpResult>>> approveDocument(@RequestBody BatchDocumentSubmissionBody body) {
+    public Mono<ResponseEntity<List<DocumentOpResult>>> approveDocument(
+        @RequestBody BatchDocumentSubmissionBody body) {
+
+        if (body == null) {
+            throw new EmptyBodyException("No input provided");
+        }
         if (body.documentIds().isEmpty()) {
             throw new EmptyBodyException("No documents to approve provided");
+        }
+        if (body.initiator() == null || body.initiator().isBlank()) {
+            throw new EmptyBodyException("No initiator provided");
         }
         return documentService.approveBatch(body.documentIds(), body.initiator())
             .collectList()

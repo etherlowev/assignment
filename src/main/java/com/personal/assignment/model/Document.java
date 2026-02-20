@@ -2,22 +2,27 @@ package com.personal.assignment.model;
 
 import com.personal.assignment.enums.DocumentStatus;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class Document {
 
     public static final String DOCUMENT_ID = "id";
     public static final String DOCUMENT_NUMBER = "number";
+    public static final String DOCUMENT_AUTHOR = "author";
     public static final String DOCUMENT_TITLE = "title";
     public static final String DOCUMENT_STATUS = "status";
     public static final String DOCUMENT_DATE_CREATED = "date_created";
     public static final String DOCUMENT_DATE_UPDATED = "date_updated";
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final Long id;
 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final Long number;
 
     private final String author;
@@ -26,13 +31,13 @@ public class Document {
 
     private final DocumentStatus status;
 
-    private final LocalDateTime dateCreated;
+    private final ZonedDateTime dateCreated;
 
-    private final LocalDateTime dateUpdated;
+    private final ZonedDateTime dateUpdated;
 
     public Document(Long id, Long number, String author,
                     String title, DocumentStatus status,
-                    LocalDateTime dateCreated, LocalDateTime dateUpdated) {
+                    ZonedDateTime dateCreated, ZonedDateTime dateUpdated) {
         this.id = id;
         this.number = number;
         this.author = author;
@@ -62,11 +67,11 @@ public class Document {
         return status;
     }
 
-    public LocalDateTime getDateCreated() {
+    public ZonedDateTime getDateCreated() {
         return dateCreated;
     }
 
-    public LocalDateTime getDateUpdated() {
+    public ZonedDateTime getDateUpdated() {
         return dateUpdated;
     }
 
@@ -76,8 +81,8 @@ public class Document {
         private String author;
         private String title;
         private DocumentStatus status;
-        private LocalDateTime dateCreated;
-        private LocalDateTime dateUpdated;
+        private ZonedDateTime dateCreated;
+        private ZonedDateTime dateUpdated;
 
         public Builder id(Long id) {
             this.id = id;
@@ -101,12 +106,12 @@ public class Document {
             return this;
         }
 
-        public Builder dateCreated(LocalDateTime dateCreated) {
+        public Builder dateCreated(ZonedDateTime dateCreated) {
             this.dateCreated = dateCreated;
             return this;
         }
 
-        public Builder dateUpdated(LocalDateTime dateUpdated) {
+        public Builder dateUpdated(ZonedDateTime dateUpdated) {
             this.dateUpdated = dateUpdated;
             return this;
         }

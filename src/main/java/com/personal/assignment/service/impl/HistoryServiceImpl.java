@@ -5,7 +5,7 @@ import com.personal.assignment.model.History;
 import com.personal.assignment.repository.HistoryRepository;
 import com.personal.assignment.service.HistoryService;
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public class HistoryServiceImpl implements HistoryService {
             .initiator(initiator)
             .documentId(documentId)
             .documentAction(action)
-            .actionDate(LocalDateTime.now())
+            .actionDate(ZonedDateTime.now())
             .build()
         );
     }

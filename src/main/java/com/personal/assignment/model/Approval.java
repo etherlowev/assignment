@@ -1,8 +1,10 @@
 package com.personal.assignment.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class Approval {
@@ -12,13 +14,14 @@ public class Approval {
     public static final String APPROVAL_DATE = "approvalDate";
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final Long id;
 
     private final Long documentId;
 
-    private final LocalDateTime approvalDate;
+    private final ZonedDateTime approvalDate;
 
-    public Approval(Long id, Long documentId, LocalDateTime approvalDate) {
+    public Approval(Long id, Long documentId, ZonedDateTime approvalDate) {
         this.id = id;
         this.documentId = documentId;
         this.approvalDate = approvalDate;
@@ -32,7 +35,7 @@ public class Approval {
         return documentId;
     }
 
-    public LocalDateTime getApprovalDate() {
+    public ZonedDateTime getApprovalDate() {
         return approvalDate;
     }
 }

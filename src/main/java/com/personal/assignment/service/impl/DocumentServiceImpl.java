@@ -5,6 +5,7 @@ import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.enums.OperationStatus;
 import com.personal.assignment.exception.NotFoundException;
 import com.personal.assignment.exception.StatusChangeException;
+import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import com.personal.assignment.repository.DocumentRepository;
@@ -12,9 +13,8 @@ import com.personal.assignment.service.ApprovalService;
 import com.personal.assignment.service.DocumentService;
 import com.personal.assignment.service.HistoryService;
 import com.personal.assignment.model.Document;
-import com.personal.assignment.model.request.DocumentCreationBody;
-import com.personal.assignment.model.request.Paging;
-import java.time.LocalDateTime;
+import com.personal.assignment.model.request.impl.DocumentCreationBody;
+import java.time.ZonedDateTime;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class DocumentServiceImpl implements DocumentService {
             body.author(),
             body.title(),
             DocumentStatus.DRAFT,
-            LocalDateTime.now(),
+            ZonedDateTime.now(),
             null
         );
     }
@@ -121,8 +121,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Flux<Document> getDocuments(Paging paging) {
-        return documentRepository.getPage(paging);
+    public Flux<Document> getDocuments(DocumentFilteredPaging filteredPaging) {
+        return documentRepository.getPage(filteredPaging.getCriteria(), filteredPaging.getPaging());
     }
 
     private Mono<DocumentOpResult> submitDocument(Document doc, String initiator) {
