@@ -88,4 +88,90 @@ public class DocumentFilteredPaging extends FilteredPaging {
         }
         return criteria;
     }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private int page;
+        private int perPage;
+        private String sort;
+        private Direction direction;
+        private List<String> authors;
+        private List<DocumentStatus> statuses;
+        private ZonedDateTime createdAfter;
+        private ZonedDateTime createdBefore;
+        private ZonedDateTime updatedAfter;
+        private ZonedDateTime updatedBefore;
+
+        public Builder page(int page) {
+            this.page = page;
+            return this;
+        }
+
+        public Builder perPage(int perPage) {
+            this.perPage = perPage;
+            return this;
+        }
+
+        public Builder sort(String sort) {
+            this.sort = sort;
+            return this;
+        }
+
+        public Builder direction(Direction direction) {
+            this.direction = direction;
+            return this;
+        }
+
+        public Builder authors(List<String> authors) {
+            this.authors = authors;
+            return this;
+        }
+
+        public Builder statuses(List<DocumentStatus> statuses) {
+            this.statuses = statuses;
+            return this;
+        }
+
+        public Builder createdAfter(ZonedDateTime createdAfter) {
+            this.createdAfter = createdAfter;
+            return this;
+        }
+
+        public Builder createdBefore(ZonedDateTime createdBefore) {
+            this.createdBefore = createdBefore;
+            return this;
+        }
+
+        public Builder updatedAfter(ZonedDateTime updatedAfter) {
+            this.updatedAfter = updatedAfter;
+            return this;
+        }
+
+        public Builder updatedBefore(ZonedDateTime updatedBefore) {
+            this.updatedBefore = updatedBefore;
+            return this;
+        }
+
+        public static Builder of(DocumentFilteredPaging paging) {
+            return new Builder().page(paging.getPage())
+                .perPage(paging.getPerPage())
+                .sort(paging.getSort())
+                .direction(paging.getDirection())
+                .authors(paging.authors)
+                .statuses(paging.statuses)
+                .createdAfter(paging.createdAfter)
+                .createdBefore(paging.createdBefore)
+                .updatedAfter(paging.updatedAfter)
+                .updatedBefore(paging.updatedBefore);
+        }
+
+        public DocumentFilteredPaging build() {
+            return new DocumentFilteredPaging(page, perPage, sort,
+                direction, authors, statuses, createdAfter,
+                createdBefore, updatedAfter, updatedBefore);
+        }
+    }
 }

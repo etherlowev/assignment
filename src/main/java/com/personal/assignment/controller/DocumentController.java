@@ -30,7 +30,7 @@ public class DocumentController {
 
     @PostMapping("/create")
     public Mono<ResponseEntity<Document>> createDocument(@RequestBody DocumentCreationBody body) {
-        return documentService.createDocument(body)
+        return documentService.createDocument(body.author(), body.title())
             .map(document -> ResponseEntity.ok().body(document));
     }
 

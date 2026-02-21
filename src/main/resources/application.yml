@@ -12,3 +12,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/document?currentSchema=public
     user: postgres
     password: postgres
+
+app:
+  worker:
+    approve:
+      batchSize: 10
+      delay: PT50S
+    submit:
+      batchSize: 10
+      delay: PT50S
