@@ -13,7 +13,7 @@ public class History {
     public static final String HISTORY_ID = "id";
     public static final String HISTORY_INITIATOR = "initiator";
     public static final String HISTORY_ACTION_DATE = "actionDate";
-    public static final String HISTORY_DOCUMENT_ID = "documentIds";
+    public static final String HISTORY_DOCUMENT_ID = "documentId";
     public static final String HISTORY_DOCUMENT_ACTION = "documentAction";
 
     @Id

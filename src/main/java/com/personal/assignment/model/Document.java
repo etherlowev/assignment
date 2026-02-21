@@ -75,6 +75,10 @@ public class Document {
         return dateUpdated;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static class Builder {
         private Long id;
         private Long number;

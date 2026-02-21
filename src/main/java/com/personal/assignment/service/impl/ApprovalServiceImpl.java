@@ -1,6 +1,7 @@
 package com.personal.assignment.service.impl;
 
 import com.personal.assignment.enums.OperationStatus;
+import com.personal.assignment.exception.NotFoundException;
 import com.personal.assignment.model.Approval;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.repository.ApprovalRepository;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 public class ApprovalServiceImpl implements ApprovalService {
@@ -31,16 +33,12 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     @Override
     public Mono<DocumentOpResult> makeEntry(Long documentId) {
+        log.info("makeEntry() >> creating approval entry for document {}", documentId);
         return documentRepository.findById(documentId)
-            .flatMap(document -> document == null ?
-                null :
-                approvalRepository.insertApproval(documentId, ZonedDateTime.now())
-            )
-            .hasElement()
-            .map(exists -> exists ?
-                new DocumentOpResult(documentId, OperationStatus.SUCCESS) :
-                new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)
-            );
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap(document -> approvalRepository.insertApproval(documentId, ZonedDateTime.now()))
+            .thenReturn(new DocumentOpResult(documentId, OperationStatus.SUCCESS))
+            .onErrorReturn(NotFoundException.class, new DocumentOpResult(documentId, OperationStatus.NOT_FOUND));
     }
 
     @Override

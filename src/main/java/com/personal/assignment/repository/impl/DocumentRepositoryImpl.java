@@ -12,6 +12,8 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.data.relational.core.query.Update;
+import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.r2dbc.core.DatabaseClient.GenericExecuteSpec;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -19,9 +21,12 @@ import reactor.core.publisher.Mono;
 @Repository
 public class DocumentRepositoryImpl implements DocumentRepository {
     private final R2dbcEntityTemplate template;
+    private final DatabaseClient databaseClient;
 
-    public DocumentRepositoryImpl(@Autowired R2dbcEntityTemplate template) {
+    public DocumentRepositoryImpl(@Autowired R2dbcEntityTemplate template,
+                                  @Autowired DatabaseClient databaseClient) {
         this.template = template;
+        this.databaseClient = databaseClient;
     }
 
     @Override
@@ -49,6 +54,11 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     }
 
     @Override
+    public Mono<Void> deleteAll() {
+        return databaseClient.sql("DELETE FROM document").then();
+    }
+
+    @Override
     public Mono<Long> updateStatusById(Long documentId, DocumentStatus status) {
         return template.update(Query.query(
             Criteria.where(Document.DOCUMENT_ID).is(documentId)),
@@ -64,13 +74,37 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     public Mono<Document> insertDocument(String author, String title,
                                          DocumentStatus status, ZonedDateTime dateCreated,
                                          ZonedDateTime dateUpdated) {
-        return template.insert(
-            new Document.Builder()
-                .author(author)
-                .title(title)
-                .status(status)
-                .dateCreated(ZonedDateTime.now())
+
+        GenericExecuteSpec spec = databaseClient.sql("""
+                INSERT INTO document
+                (author, title, status, date_created, date_updated)
+                VALUES (:author, :title, :status, :date_created, :date_updated)
+                RETURNING id, number, author, title, status, date_created, date_updated""");
+
+        spec = bindNullable(spec, Document.DOCUMENT_AUTHOR, author, String.class);
+        spec = bindNullable(spec, Document.DOCUMENT_TITLE, title, String.class);
+        spec = bindNullable(spec, Document.DOCUMENT_STATUS, status.toString(), String.class);
+        spec = bindNullable(spec, Document.DOCUMENT_DATE_CREATED, dateCreated, ZonedDateTime.class);
+        spec = bindNullable(spec, Document.DOCUMENT_DATE_UPDATED, dateUpdated, ZonedDateTime.class);
+
+        return spec.map(row -> Document.builder()
+                .id(row.get(Document.DOCUMENT_ID, Long.class))
+                .author(row.get(Document.DOCUMENT_AUTHOR, String.class))
+                .number(row.get(Document.DOCUMENT_NUMBER, Long.class))
+                .title(row.get( Document.DOCUMENT_TITLE, String.class))
+                .status(DocumentStatus.valueOf(row.get(Document.DOCUMENT_STATUS, String.class)))
+                .dateCreated(row.get(Document.DOCUMENT_DATE_CREATED, ZonedDateTime.class))
+                .dateUpdated(row.get(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.class))
                 .build()
-        );
+            )
+            .one();
+    }
+
+    private <T> GenericExecuteSpec bindNullable(GenericExecuteSpec bindspec,
+                                                String name,
+                                                T value,
+                                                Class<T> type) {
+
+        return value == null ? bindspec.bindNull(name, type) : bindspec.bind(name, value);
     }
 }

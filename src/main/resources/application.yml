@@ -4,14 +4,14 @@ spring:
   r2dbc:
     name: docs
     url: r2dbc:postgresql://localhost:5432/document?currentSchema=public
-    username: postgres
-    password: postgres
+    username: docs
+    password: pass
   liquibase:
-    enabled: false
-    change-log: classpath:db/changelog/changelog.xml
+    enabled: true
+    change-log: classpath:db/master.xml
     url: jdbc:postgresql://localhost:5432/document?currentSchema=public
-    user: postgres
-    password: postgres
+    user: docs
+    password: pass
 
 app:
   worker:

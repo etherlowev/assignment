@@ -32,7 +32,7 @@ public class ApproveWorker {
     @Scheduled(initialDelay = 1000, fixedDelayString = "${app.worker.approve.delay}")
     public void approve() {
 
-        log.info("Approving batch: {}", batchSize);
+        log.info("approve() >> Approving batch: {}", batchSize);
         documentService.getDocuments(DocumentFilteredPaging.builder()
                 .page(1)
                 .perPage(batchSize)
@@ -49,13 +49,13 @@ public class ApproveWorker {
                         docs.stream().map(Document::getId).collect(Collectors.toSet()),
                         "worker"
                     )
-                    .doOnError(err -> log.error("Failed batch chunk", err))
+                    .doOnError(err -> log.error("approve() >> Failed batch chunk", err))
                     .onErrorResume(err -> {
-                        log.error("Skipping failed chunk", err);
+                        log.error("approve() >> Skipping failed chunk", err);
                         return Flux.empty();
                     });
             })
-            .doOnComplete(() -> log.info("Completed approving batch in worker"))
+            .doOnComplete(() -> log.info("approve() >> Completed approving batch in worker"))
             .blockLast();
     }
 }

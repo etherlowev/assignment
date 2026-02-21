@@ -61,7 +61,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Flux<Document> createDocumentBatch(String author, List<String> titles) {
-        log.info("Creating {} documents", titles.size());
+        log.info("createDocumentBatch() >> Creating {} documents", titles.size());
         long startTime = System.currentTimeMillis();
 
         AtomicInteger counter = new AtomicInteger();
@@ -70,9 +70,11 @@ public class DocumentServiceImpl implements DocumentService {
         return Flux.fromIterable(titles)
             .parallel()
             .flatMap(title -> createDocument(author, title)
-                .doOnNext(doc -> log.info("Batch creation progress {}/{}", counter.incrementAndGet(), total)))
+                .doOnNext(doc -> log.info("createDocumentBatch() >> Batch creation progress {}/{}",
+                    counter.incrementAndGet(), total))
+            )
             .sequential(10)
-            .doFinally(signalType -> log.info("Finished batch creation in {} ms",
+            .doFinally(signalType -> log.info("createDocumentBatch() >> Finished batch creation in {} ms",
                 System.currentTimeMillis() - startTime)
             );
     }
@@ -96,7 +98,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Flux<DocumentOpResult> submitBatch(Set<Long> documentIds, String initiator) {
-        log.info("Batch submitting {} documents, initiated by {}", documentIds.size(), initiator);
+        log.info("submitBatch() >> Batch submitting {} documents, initiated by {}", documentIds.size(), initiator);
 
         AtomicInteger progress = new AtomicInteger();
         int size = documentIds.size();
@@ -107,16 +109,16 @@ public class DocumentServiceImpl implements DocumentService {
             .parallel()
             .runOn(Schedulers.boundedElastic())
             .flatMap(documentId -> this.submitDocumentById(documentId, initiator)
-                .doOnNext(ignored -> log.info("Submission progress {}/{}", progress.incrementAndGet(), size)))
+                .doOnNext(ignored -> log.info("submitBatch() >> Submission progress {}/{}", progress.incrementAndGet(), size)))
             .sequential(10)
-            .doOnComplete(() -> log.info("Finished batch submission on {} objects, finished in {} ms",
+            .doOnComplete(() -> log.info("submitBatch() >> Finished batch submission on {} objects, finished in {} ms",
                 documentIds.size(),
                 System.currentTimeMillis() - startTime));
     }
 
     @Override
     public Flux<DocumentOpResult> approveBatch(Set<Long> documentIds, String initiator) {
-        log.info("beginning operation on {} documents", documentIds.size());
+        log.info("approveBatch() >> beginning operation on {} documents", documentIds.size());
 
         AtomicInteger progress = new AtomicInteger();
         int size = documentIds.size();
@@ -127,16 +129,18 @@ public class DocumentServiceImpl implements DocumentService {
             .parallel()
             .runOn(Schedulers.boundedElastic())
             .flatMap(documentId -> this.approveDocumentById(documentId, initiator)
-                .doOnNext(ignored -> log.info("Approval progress {}/{}", progress.incrementAndGet(), size)))
+                .doOnNext(ignored -> log.info("approveBatch() >> Approval progress {}/{}",
+                    progress.incrementAndGet(), size))
+            )
             .sequential(10)
-            .doOnComplete(() -> log.info("finished approval of {} documents, completed in {} ms",
+            .doOnComplete(() -> log.info("approveBatch() >> finished approval of {} documents, completed in {} ms",
                 documentIds.size(),
                 System.currentTimeMillis() - startTime));
     }
 
     @Override
     public Mono<DocumentOpResult> approveDocumentById(Long documentId, String initiator) {
-        log.info("beginning operation on document {}", documentId);
+        log.info("approveDocumentById() >> beginning operation on document {}", documentId);
 
         return activeApprovalOps.containsKey(documentId) ?
             Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT))
@@ -154,7 +158,7 @@ public class DocumentServiceImpl implements DocumentService {
                         new DocumentOpResult(documentId, OperationStatus.ERROR)
                     )
                     .doFinally(signalType -> {
-                        log.info("finished approval on document {}", documentId);
+                        log.info("approveDocumentById() >> finished approval on document {}", documentId);
                         activeApprovalOps.remove(documentId);
                     })
         );

@@ -32,7 +32,7 @@ public class SubmitWorker {
 
     @Scheduled(initialDelay = 1000, fixedDelayString = "${app.worker.submit.delay}")
     public void submit() {
-        log.info("Submitting batch: {}", batchSize);
+        log.info("submit() >> Submitting batch: {}", batchSize);
         documentService.getDocuments(DocumentFilteredPaging.builder()
                 .page(1)
                 .perPage(batchSize)
@@ -49,13 +49,13 @@ public class SubmitWorker {
                     docs.stream().map(Document::getId).collect(Collectors.toSet()),
                         "worker"
                     )
-                    .doOnError(err -> log.error("Failed batch chunk", err))
+                    .doOnError(err -> log.error("submit() >> Failed batch chunk", err))
                     .onErrorResume(err -> {
-                        log.error("Skipping failed chunk", err);
+                        log.error("submit() >> Skipping failed chunk", err);
                         return Flux.empty();
                     });
             })
-            .doOnComplete(() -> log.info("Completed submitting batch in worker"))
+            .doOnComplete(() -> log.info("submit() >> Completed submitting batch in worker"))
             .blockLast();
     }
 }

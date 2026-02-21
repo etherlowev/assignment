@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 public class Approval {
 
     public static final String APPROVAL_ID = "id";
-    public static final String APPROVAL_DOCUMENT_ID = "documentIds";
+    public static final String APPROVAL_DOCUMENT_ID = "documentId";
     public static final String APPROVAL_DATE = "approvalDate";
 
     @Id

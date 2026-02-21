@@ -112,6 +112,12 @@
             <artifactId>testcontainers-r2dbc</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <version>6.0.3</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -119,6 +125,30 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-maven-plugin</artifactId>
+                <version>4.33.0</version>
+                <configuration>
+                    <outputChangeLogFile>src/main/resources/db/changelog/changelog.xml</outputChangeLogFile>
+                    <changeLogFile>src/main/resources/db/master.xml</changeLogFile>
+                    <driver>org.postgresql.Driver</driver>
+                    <url>jdbc:postgresql://localhost:5432/document</url>
+                    <username>postgres</username>
+                    <password>postgres</password>
+                    <referenceDriver>org.postgresql.Driver</referenceDriver>
+                    <referenceUrl>jdbc:postgresql://localhost:5432/document</referenceUrl>
+                    <referenceUsername>postgres</referenceUsername>
+                    <referencePassword>postgres</referencePassword>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>42.7.10</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

@@ -24,4 +24,6 @@ public interface DocumentRepository {
     Mono<Document> findById(Long id);
 
     Mono<Document> findByNumber(Long number);
+
+    Mono<Void> deleteAll();
 }

@@ -1,0 +1,50 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="human (generated)" id="1771698738226-1">
+        <createTable tableName="document">
+            <column autoIncrement="true" name="id" startWith="49" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="document_pkey"/>
+            </column>
+            <column autoIncrement="true" name="number" startWith="49" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="author" type="VARCHAR(40)"/>
+            <column name="title" type="VARCHAR(40)"/>
+            <column name="status" type="VARCHAR(16)"/>
+            <column name="date_created" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="date_updated" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="human (generated)" id="1771698738226-2">
+        <createTable tableName="approval">
+            <column autoIncrement="true" name="id" startWith="139" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="approval_pkey"/>
+            </column>
+            <column name="document_id" type="BIGINT"/>
+            <column name="approval_date" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="human (generated)" id="1771698738226-3">
+        <createTable tableName="history">
+            <column autoIncrement="true" name="id" startWith="157" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="history_pkey"/>
+            </column>
+            <column name="initiator" type="VARCHAR(40)"/>
+            <column name="action_date" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="document_id" type="BIGINT"/>
+            <column name="document_action" type="VARCHAR(16)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="human (generated)" id="1771698738226-4">
+        <createIndex indexName="document_dates" tableName="document" using="btree">
+            <column name="date_updated"/>
+            <column name="date_created"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="human (generated)" id="1771698738226-5">
+        <addForeignKeyConstraint baseColumnNames="document_id" baseTableName="approval" constraintName="document_reference" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="document" validate="true"/>
+    </changeSet>
+    <changeSet author="human (generated)" id="1771698738226-6">
+        <addForeignKeyConstraint baseColumnNames="document_id" baseTableName="history" constraintName="document_reference" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="document" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

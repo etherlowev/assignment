@@ -27,6 +27,7 @@ public class HistoryServiceImpl implements HistoryService {
 
     @Override
     public Mono<History> createEntry(String initiator, Long documentId, DocumentAction action) {
+        log.info("createEntry() >> Creating history entry for document {}", documentId);
         return historyRepository.save(History.builder()
             .initiator(initiator)
             .documentId(documentId)
