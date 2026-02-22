@@ -50,6 +50,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Mono<Document> createDocument(String author, String title) {
+        log.info("Creating document {} by {}", title, author);
         return documentRepository.insertDocument(
             author,
             title,
