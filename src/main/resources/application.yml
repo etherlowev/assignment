@@ -15,6 +15,7 @@ spring:
 
 app:
   worker:
+    enabled: true
     approve:
       batchSize: 10
       delay: PT50S
