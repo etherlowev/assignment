@@ -26,11 +26,11 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-liquibase</artifactId>
+            <artifactId>spring-boot-starter-r2dbc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-r2dbc</artifactId>
+            <artifactId>spring-boot-starter-liquibase</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -135,12 +135,12 @@
                     <changeLogFile>src/main/resources/db/master.xml</changeLogFile>
                     <driver>org.postgresql.Driver</driver>
                     <url>jdbc:postgresql://localhost:5432/document</url>
-                    <username>postgres</username>
-                    <password>postgres</password>
+                    <username>docs</username>
+                    <password>pass</password>
                     <referenceDriver>org.postgresql.Driver</referenceDriver>
                     <referenceUrl>jdbc:postgresql://localhost:5432/document</referenceUrl>
-                    <referenceUsername>postgres</referenceUsername>
-                    <referencePassword>postgres</referencePassword>
+                    <referenceUsername>docs</referenceUsername>
+                    <referencePassword>pass</referencePassword>
                 </configuration>
                 <dependencies>
                     <dependency>
