@@ -36,8 +36,7 @@ public class DocumentBatchController {
     }
 
     @PostMapping("/submit")
-    public Mono<ResponseEntity<List<DocumentOpResult>>> submitDocument(
-        @RequestBody BatchDocumentSubmissionBody body) {
+    public Mono<ResponseEntity<List<DocumentOpResult>>> submitDocument(@RequestBody BatchDocumentSubmissionBody body) {
 
         if (body == null) {
             throw new EmptyBodyException("No input provided");
@@ -49,24 +48,6 @@ public class DocumentBatchController {
             throw new EmptyBodyException("No initiator provided");
         }
         return documentService.submitBatch(body.documentIds(), body.initiator())
-            .collectList()
-            .map(list -> ResponseEntity.ok().body(list));
-    }
-
-    @PostMapping("/approve")
-    public Mono<ResponseEntity<List<DocumentOpResult>>> approveDocument(
-        @RequestBody BatchDocumentSubmissionBody body) {
-
-        if (body == null) {
-            throw new EmptyBodyException("No input provided");
-        }
-        if (body.documentIds().isEmpty()) {
-            throw new EmptyBodyException("No documents to approve provided");
-        }
-        if (body.initiator() == null || body.initiator().isBlank()) {
-            throw new EmptyBodyException("No initiator provided");
-        }
-        return documentService.approveBatch(body.documentIds(), body.initiator())
             .collectList()
             .map(list -> ResponseEntity.ok().body(list));
     }

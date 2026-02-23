@@ -39,7 +39,7 @@ public class HistoryServiceTest {
     }
 
     @Test
-    public void createEntry() {
+    public void createHistoryEntry() {
 
         Document doc = documentRepository.insertDocument("author", "title", DocumentStatus.APPROVED,
             ZonedDateTime.now(), null).block();
@@ -50,7 +50,7 @@ public class HistoryServiceTest {
         Long documentId = doc.getId();
         DocumentAction action = DocumentAction.APPROVE;
 
-        historyService.createEntry(initiator, documentId, action).block();
+        historyService.createHistoryEntry(initiator, documentId, action).block();
 
         assertEquals(doc.getId(), historyService.getHistory(doc.getId()).blockLast().getDocumentId());
     }

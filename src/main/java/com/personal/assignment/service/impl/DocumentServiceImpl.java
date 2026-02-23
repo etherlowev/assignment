@@ -38,7 +38,6 @@ public class DocumentServiceImpl implements DocumentService {
     private final ApprovalService approvalService;
 
     private final ConcurrentHashMap<Long, Mono<DocumentOpResult>> activeSubmissionOps = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, Mono<DocumentOpResult>> activeApprovalOps = new ConcurrentHashMap<>();
 
     public DocumentServiceImpl(@Autowired DocumentRepository documentRepository,
                                @Autowired HistoryService historyService,
@@ -118,54 +117,6 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Flux<DocumentOpResult> approveBatch(Set<Long> documentIds, String initiator) {
-        log.info("approveBatch() >> beginning operation on {} documents", documentIds.size());
-
-        AtomicInteger progress = new AtomicInteger();
-        int size = documentIds.size();
-
-        long startTime = System.currentTimeMillis();
-
-        return Flux.fromIterable(documentIds)
-            .parallel()
-            .runOn(Schedulers.boundedElastic())
-            .flatMap(documentId -> this.approveDocumentById(documentId, initiator)
-                .doOnNext(ignored -> log.info("approveBatch() >> Approval progress {}/{}",
-                    progress.incrementAndGet(), size))
-            )
-            .sequential(10)
-            .doOnComplete(() -> log.info("approveBatch() >> finished approval of {} documents, completed in {} ms",
-                documentIds.size(),
-                System.currentTimeMillis() - startTime));
-    }
-
-    @Override
-    public Mono<DocumentOpResult> approveDocumentById(Long documentId, String initiator) {
-        log.info("approveDocumentById() >> beginning operation on document {}", documentId);
-
-        return activeApprovalOps.containsKey(documentId) ?
-            Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT))
-            : activeApprovalOps.computeIfAbsent(documentId, key ->
-                documentRepository.findById(documentId)
-                    .publishOn(Schedulers.boundedElastic())
-                    .flatMap(doc -> this.approveDocument(doc, initiator))
-                    .onErrorReturn(NotFoundException.class,
-                        new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)
-                    )
-                    .onErrorReturn(StatusChangeException.class,
-                        new DocumentOpResult(documentId, OperationStatus.CONFLICT)
-                    )
-                    .onErrorReturn(Throwable.class,
-                        new DocumentOpResult(documentId, OperationStatus.ERROR)
-                    )
-                    .doFinally(signalType -> {
-                        log.info("approveDocumentById() >> finished approval on document {}", documentId);
-                        activeApprovalOps.remove(documentId);
-                    })
-        );
-    }
-
-    @Override
     public Mono<DocumentWithHistory> getDocumentById(Long id) {
         return Mono.zip(
                 documentRepository.findById(id),
@@ -186,23 +137,7 @@ public class DocumentServiceImpl implements DocumentService {
             );
         }
         return documentRepository.updateStatusById(doc.getId(), DocumentStatus.SUBMITTED)
-            .then(historyService.createEntry(initiator, doc.getId(), DocumentAction.SUBMIT))
-            .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
-    }
-
-    private Mono<DocumentOpResult> approveDocument(Document doc, String initiator) {
-        if (doc.getStatus() != DocumentStatus.SUBMITTED) {
-            return Mono.error(
-                new StatusChangeException("Can't approve document %s".formatted(doc.getId()),
-                    doc.getId())
-            );
-        }
-        return documentRepository.updateStatusById(doc.getId(), DocumentStatus.APPROVED)
-            .subscribeOn(Schedulers.boundedElastic())
-            .then(Mono.when(
-                historyService.createEntry(initiator, doc.getId(), DocumentAction.APPROVE),
-                approvalService.makeEntry(doc.getId())
-            ))
+            .then(historyService.createHistoryEntry(initiator, doc.getId(), DocumentAction.SUBMIT))
             .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
     }
 }

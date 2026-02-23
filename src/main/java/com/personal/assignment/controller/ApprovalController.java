@@ -1,11 +1,16 @@
 package com.personal.assignment.controller;
 
+import com.personal.assignment.exception.EmptyBodyException;
 import com.personal.assignment.model.Approval;
+import com.personal.assignment.model.request.impl.BatchDocumentSubmissionBody;
+import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.service.ApprovalService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -25,5 +30,23 @@ public class ApprovalController {
         return approvalService.getApprovals()
             .collectList()
             .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/approve")
+    public Mono<ResponseEntity<List<DocumentOpResult>>> approveDocument(@RequestBody
+                                                                        BatchDocumentSubmissionBody body) {
+
+        if (body == null) {
+            throw new EmptyBodyException("No input provided");
+        }
+        if (body.documentIds().isEmpty()) {
+            throw new EmptyBodyException("No documents to approve provided");
+        }
+        if (body.initiator() == null || body.initiator().isBlank()) {
+            throw new EmptyBodyException("No initiator provided");
+        }
+        return approvalService.approveBatch(body.documentIds(), body.initiator())
+            .collectList()
+            .map(list -> ResponseEntity.ok().body(list));
     }
 }

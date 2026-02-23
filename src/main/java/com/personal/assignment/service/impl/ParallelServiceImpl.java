@@ -1,7 +1,7 @@
 package com.personal.assignment.service.impl;
 
 import com.personal.assignment.model.response.ParallelApproveResponse;
-import com.personal.assignment.service.DocumentService;
+import com.personal.assignment.service.ApprovalService;
 import com.personal.assignment.service.ParallelService;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,10 +14,10 @@ import reactor.core.publisher.Mono;
 @Service
 public class ParallelServiceImpl implements ParallelService {
 
-    private final DocumentService documentService;
+    private final ApprovalService approvalService;
 
-    public ParallelServiceImpl(@Autowired DocumentService documentService) {
-        this.documentService = documentService;
+    public ParallelServiceImpl(@Autowired ApprovalService approvalService) {
+        this.approvalService = approvalService;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ParallelServiceImpl implements ParallelService {
                                          AtomicLong errorCounter) {
         List<Mono<Void>> monos = new ArrayList<>();
         for (int i = 0 ; i < threads ; i++) {
-            monos.add(documentService.approveDocumentById(documentId, initiator)
+            monos.add(approvalService.approveDocumentById(documentId, initiator)
                 .repeat(Math.max(attempts-1, 0))
                 .collectList()
                 .doOnNext(list -> list.forEach(opResult -> {

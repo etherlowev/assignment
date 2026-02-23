@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface HistoryService {
-    Mono<History> createEntry(String initiator, Long documentId, DocumentAction action);
+    Mono<History> createHistoryEntry(String initiator, Long documentId, DocumentAction action);
 
     Flux<History> getHistory(Long documentId);
 }

@@ -3,11 +3,13 @@ package com.personal.assignment.worker;
 import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.Document;
+import com.personal.assignment.service.ApprovalService;
 import com.personal.assignment.service.DocumentService;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,14 +21,18 @@ public class ApproveWorker {
 
     private final int batchSize;
 
+    private final ApprovalService approvalService;
+
     private final DocumentService documentService;
 
     private final Logger log = LoggerFactory.getLogger(ApproveWorker.class);
 
     public ApproveWorker(@Value("${app.worker.approve.batchSize}") int batchSize,
-                         DocumentService documentService) {
+                         @Autowired DocumentService documentService,
+                         @Autowired ApprovalService approvalService) {
         this.batchSize = batchSize;
         this.documentService = documentService;
+        this.approvalService = approvalService;
     }
 
     @Scheduled(initialDelay = 1000, fixedDelayString = "${app.worker.approve.delay}")
@@ -45,7 +51,7 @@ public class ApproveWorker {
                 if (docs.isEmpty()) {
                     return Flux.empty();
                 }
-                return documentService.approveBatch(
+                return approvalService.approveBatch(
                         docs.stream().map(Document::getId).collect(Collectors.toSet()),
                         "worker"
                     )

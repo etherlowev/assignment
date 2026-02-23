@@ -52,11 +52,4 @@ public class DocumentController {
         return documentService.submitDocumentById(body.documentId(), body.initiator())
             .map(document -> ResponseEntity.ok().body(document));
     }
-
-    @PostMapping("/approve")
-    public Mono<ResponseEntity<DocumentOpResult>> approveDocument(@RequestBody DocumentSubmissionBody body) {
-        return documentService.approveDocumentById(body.documentId(), body.initiator())
-            .map(document -> ResponseEntity.ok().body(document));
-    }
-
 }
