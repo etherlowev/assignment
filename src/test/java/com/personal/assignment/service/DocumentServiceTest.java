@@ -6,13 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.personal.assignment.configuration.TestcontainersConfiguration;
+import com.personal.assignment.enums.DocumentAction;
 import com.personal.assignment.enums.DocumentStatus;
+import com.personal.assignment.enums.OperationStatus;
 import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.Document;
+import com.personal.assignment.model.History;
+import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
+import com.personal.assignment.repository.ApprovalRepository;
 import com.personal.assignment.repository.DocumentRepository;
+import com.personal.assignment.repository.HistoryRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,17 +33,31 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 public class DocumentServiceTest {
     private final DocumentService documentService;
+    private final ApprovalService approvalService;
+    private final HistoryService historyService;
     private final DocumentRepository documentRepository;
+    private final ApprovalRepository approvalRepository;
+    private final HistoryRepository historyRepository;
 
     public DocumentServiceTest(@Autowired DocumentService documentService,
-                               @Autowired DocumentRepository documentRepository) {
+                               @Autowired ApprovalService approvalService,
+                               @Autowired HistoryService historyService,
+                               @Autowired DocumentRepository documentRepository,
+                               @Autowired ApprovalRepository approvalRepository,
+                               @Autowired HistoryRepository historyRepository) {
         this.documentService = documentService;
+        this.approvalService = approvalService;
+        this.historyService = historyService;
         this.documentRepository = documentRepository;
+        this.approvalRepository = approvalRepository;
+        this.historyRepository = historyRepository;
     }
 
     @AfterEach
     public void tearDown() {
         documentRepository.deleteAll().block();
+        approvalRepository.deleteAll().block();
+        historyRepository.deleteAll().block();
     }
 
     @Test
@@ -90,6 +111,47 @@ public class DocumentServiceTest {
         documentService.submitBatch(documentIds, initiator).collectList().block();
 
         assertTrue(getDocuments(100).stream().allMatch(doc -> doc.getStatus() == DocumentStatus.SUBMITTED));
+    }
+
+    @Test
+    public void createAndApproveDocumentTest() {
+        String author = "test_author";
+        String title = "test_title";
+        Document document = documentService.createDocument(author, title).block();
+
+        assertNotNull(document);
+        assertEquals(DocumentStatus.DRAFT, document.getStatus());
+
+        DocumentOpResult submitRes = documentService.submitDocumentById(document.getId(), author).block();
+        assertNotNull(submitRes);
+        assertEquals(OperationStatus.SUCCESS, submitRes.status());
+
+        DocumentWithHistory docWIthHistory = documentService.getDocumentById(document.getId()).block();
+
+        assertNotNull(docWIthHistory);
+
+        document = docWIthHistory.getDocument();
+        assertEquals(DocumentStatus.SUBMITTED, document.getStatus());
+
+
+        List<History> histories = historyService.getHistory(document.getId()).collectList().block();
+        assertNotNull(histories);
+        assertEquals(1, histories.size());
+        assertEquals(DocumentAction.SUBMIT, histories.getFirst().getDocumentAction());
+
+        DocumentOpResult approveRes = approvalService.approveDocumentById(document.getId(), author).block();
+        assertNotNull(approveRes);
+        assertEquals(OperationStatus.SUCCESS, approveRes.status());
+
+        document = Objects.requireNonNull(documentService.getDocumentById(document.getId()).block())
+            .getDocument();
+
+        assertEquals(DocumentStatus.APPROVED, document.getStatus());
+
+        histories = historyService.getHistory(document.getId()).collectList().block();
+        assertNotNull(histories);
+        assertEquals(2, histories.size());
+        assertEquals(DocumentAction.APPROVE, histories.get(1).getDocumentAction());
     }
 
     private List<Document> getDocuments(int amount) {
