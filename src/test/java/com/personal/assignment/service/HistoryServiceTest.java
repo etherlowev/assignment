@@ -7,6 +7,7 @@ import com.personal.assignment.configuration.TestcontainersConfiguration;
 import com.personal.assignment.enums.DocumentAction;
 import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.model.Document;
+import com.personal.assignment.model.History;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.repository.HistoryRepository;
 import java.time.ZonedDateTime;
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import reactor.core.publisher.Mono;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -35,7 +35,8 @@ public class HistoryServiceTest {
 
     @AfterEach
     public void tearDown() {
-        Mono.when(historyRepository.deleteAll(), documentRepository.deleteAll()).block();
+        historyRepository.deleteAll().block();
+        documentRepository.deleteAll().block();
     }
 
     @Test
@@ -52,6 +53,8 @@ public class HistoryServiceTest {
 
         historyService.createHistoryEntry(initiator, documentId, action).block();
 
-        assertEquals(doc.getId(), historyService.getHistory(doc.getId()).blockLast().getDocumentId());
+        History history = historyService.getHistory(doc.getId()).blockLast();
+        assertNotNull(history);
+        assertEquals(doc.getId(), history.getDocumentId());
     }
 }

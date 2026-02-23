@@ -11,4 +11,8 @@ import reactor.core.publisher.Mono;
 public interface ApprovalRepository extends R2dbcRepository<Approval, Long> {
     @Query("INSERT INTO approval (document_id, approval_date) VALUES (:documentId, :approvalDate)")
     Mono<Approval> insertApproval(Long documentId, ZonedDateTime approvalDate);
+
+    Mono<Approval> findByDocumentId(Long documentId);
+
+    Mono<Boolean> existsByDocumentId(Long documentId);
 }

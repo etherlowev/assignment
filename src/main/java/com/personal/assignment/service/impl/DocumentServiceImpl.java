@@ -9,10 +9,10 @@ import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import com.personal.assignment.repository.DocumentRepository;
-import com.personal.assignment.service.ApprovalService;
+import com.personal.assignment.repository.HistoryRepository;
 import com.personal.assignment.service.DocumentService;
-import com.personal.assignment.service.HistoryService;
 import com.personal.assignment.model.Document;
+import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
@@ -27,24 +27,21 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Service
+@Transactional
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentServiceImpl.class);
 
     private final DocumentRepository documentRepository;
 
-    private final HistoryService historyService;
-
-    private final ApprovalService approvalService;
+    private final HistoryRepository historyRepository;
 
     private final ConcurrentHashMap<Long, Mono<DocumentOpResult>> activeSubmissionOps = new ConcurrentHashMap<>();
 
     public DocumentServiceImpl(@Autowired DocumentRepository documentRepository,
-                               @Autowired HistoryService historyService,
-                               @Autowired ApprovalService approvalService) {
+                               @Autowired HistoryRepository historyRepository) {
         this.documentRepository = documentRepository;
-        this.historyService = historyService;
-        this.approvalService = approvalService;
+        this.historyRepository = historyRepository;
     }
 
     @Override
@@ -68,12 +65,10 @@ public class DocumentServiceImpl implements DocumentService {
         int total = titles.size();
 
         return Flux.fromIterable(titles)
-            .parallel()
-            .flatMap(title -> createDocument(author, title)
-                .doOnNext(doc -> log.info("createDocumentBatch() >> Batch creation progress {}/{}",
-                    counter.incrementAndGet(), total))
+            .doOnNext(doc -> log.info("createDocumentBatch() >> Batch creation progress {}/{}",
+                counter.incrementAndGet(), total)
             )
-            .sequential(10)
+            .flatMap(title -> createDocument(author, title))
             .doFinally(signalType -> log.info("createDocumentBatch() >> Finished batch creation in {} ms",
                 System.currentTimeMillis() - startTime)
             );
@@ -81,6 +76,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Mono<DocumentOpResult> submitDocumentById(Long documentId, String initiator) {
+        log.info("submitDocumentById() >> submitting document {}", documentId);
         return activeSubmissionOps.containsKey(documentId) ?
             Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)) :
             activeSubmissionOps.computeIfAbsent(documentId, key ->
@@ -93,6 +89,7 @@ public class DocumentServiceImpl implements DocumentService {
                         ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)))
                     .onErrorResume(Throwable.class,
                         ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.ERROR)))
+                    .doFinally(signalType -> log.info("submitDocumentById() >> document {}", documentId))
         );
     }
 
@@ -106,11 +103,8 @@ public class DocumentServiceImpl implements DocumentService {
         long startTime = System.currentTimeMillis();
 
         return Flux.fromIterable(documentIds)
-            .parallel()
-            .runOn(Schedulers.boundedElastic())
             .flatMap(documentId -> this.submitDocumentById(documentId, initiator)
                 .doOnNext(ignored -> log.info("submitBatch() >> Submission progress {}/{}", progress.incrementAndGet(), size)))
-            .sequential(10)
             .doOnComplete(() -> log.info("submitBatch() >> Finished batch submission on {} objects, finished in {} ms",
                 documentIds.size(),
                 System.currentTimeMillis() - startTime));
@@ -120,7 +114,7 @@ public class DocumentServiceImpl implements DocumentService {
     public Mono<DocumentWithHistory> getDocumentById(Long id) {
         return Mono.zip(
                 documentRepository.findById(id),
-                historyService.getHistory(id).collectList()
+                historyRepository.findAllByDocumentId(id).collectList()
             )
             .map(tuple -> new DocumentWithHistory(tuple.getT1(), tuple.getT2()));
     }
@@ -130,14 +124,15 @@ public class DocumentServiceImpl implements DocumentService {
         return documentRepository.getPage(filteredPaging.getCriteria(), filteredPaging.getPaging());
     }
 
-    private Mono<DocumentOpResult> submitDocument(Document doc, String initiator) {
+    @Transactional
+    protected Mono<DocumentOpResult> submitDocument(Document doc, String initiator) {
         if (doc.getStatus() != DocumentStatus.DRAFT) {
             return Mono.error(
                 new StatusChangeException("Can't submit document %s".formatted(doc.getId()), doc.getId())
             );
         }
         return documentRepository.updateStatusById(doc.getId(), DocumentStatus.SUBMITTED)
-            .then(historyService.createHistoryEntry(initiator, doc.getId(), DocumentAction.SUBMIT))
+            .then(historyRepository.createHistoryEntry(initiator, doc.getId(), DocumentAction.SUBMIT))
             .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
     }
 }

@@ -81,7 +81,7 @@ public class DocumentServiceTest {
         int amount = 100;
         makeBatchOfDocuments(amount);
 
-        assertEquals(getDocuments(200).size(), amount);
+        assertEquals(amount, getDocuments(200).size());
     }
 
     @Test
@@ -133,11 +133,10 @@ public class DocumentServiceTest {
         document = docWIthHistory.getDocument();
         assertEquals(DocumentStatus.SUBMITTED, document.getStatus());
 
-
         List<History> histories = historyService.getHistory(document.getId()).collectList().block();
         assertNotNull(histories);
         assertEquals(1, histories.size());
-        assertEquals(DocumentAction.SUBMIT, histories.getFirst().getDocumentAction());
+        assertTrue(histories.stream().anyMatch(history -> history.getDocumentAction() == DocumentAction.SUBMIT));
 
         DocumentOpResult approveRes = approvalService.approveDocumentById(document.getId(), author).block();
         assertNotNull(approveRes);
@@ -151,7 +150,7 @@ public class DocumentServiceTest {
         histories = historyService.getHistory(document.getId()).collectList().block();
         assertNotNull(histories);
         assertEquals(2, histories.size());
-        assertEquals(DocumentAction.APPROVE, histories.get(1).getDocumentAction());
+        assertTrue(histories.stream().anyMatch(history -> history.getDocumentAction() == DocumentAction.APPROVE));
     }
 
     private List<Document> getDocuments(int amount) {

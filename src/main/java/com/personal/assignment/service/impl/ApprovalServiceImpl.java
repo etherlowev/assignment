@@ -51,7 +51,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Override
     @Transactional
     public Mono<DocumentOpResult> createApprovalEntry(Long documentId) {
-        log.info("makeEntry() >> creating approval entry for document {}", documentId);
+        log.info("createApprovalEntry() >> creating approval entry for document {}", documentId);
         return documentRepository.findById(documentId)
             .subscribeOn(Schedulers.boundedElastic())
             .flatMap(document -> approvalRepository.insertApproval(documentId, ZonedDateTime.now()))
@@ -69,13 +69,9 @@ public class ApprovalServiceImpl implements ApprovalService {
         long startTime = System.currentTimeMillis();
 
         return Flux.fromIterable(documentIds)
-            .parallel()
-            .runOn(Schedulers.boundedElastic())
-            .flatMap(documentId -> this.approveDocumentById(documentId, initiator)
-                .doOnNext(ignored -> log.info("approveBatch() >> Approval progress {}/{}",
-                    progress.incrementAndGet(), size))
+            .flatMap(documentId -> approveDoc(documentId, initiator)
+                .doFinally(ignored -> log.info("approveBatch() >> Approval progress {}/{}", progress.incrementAndGet(), size))
             )
-            .sequential(10)
             .doOnComplete(() -> log.info("approveBatch() >> finished approval of {} documents, completed in {} ms",
                 documentIds.size(),
                 System.currentTimeMillis() - startTime));
@@ -84,25 +80,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Override
     public Mono<DocumentOpResult> approveDocumentById(Long documentId, String initiator) {
         log.info("approveDocumentById() >> beginning operation on document {}", documentId);
-        if (activeApprovalOps.containsKey(documentId)) {
-            return Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT));
-        }
-
-        return activeApprovalOps.computeIfAbsent(documentId, key ->
-            documentRepository.findById(documentId)
-                .publishOn(Schedulers.boundedElastic())
-                .flatMap(doc -> this.approveDocument(doc, initiator))
-                .onErrorReturn(NotFoundException.class,
-                    new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)
-                )
-                .onErrorReturn(StatusChangeException.class,
-                    new DocumentOpResult(documentId, OperationStatus.CONFLICT)
-                )
-                .doFinally(signalType -> {
-                    log.info("approveDocumentById() >> finished approval on document {}", documentId);
-                    activeApprovalOps.remove(documentId);
-                })
-        );
+        return approveDoc(documentId, initiator);
     }
 
     @Override
@@ -130,5 +108,27 @@ public class ApprovalServiceImpl implements ApprovalService {
             )
             .then(this.createApprovalEntry(doc.getId()))
             .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
+    }
+
+    @Transactional
+    protected Mono<DocumentOpResult> approveDoc(Long documentId, String initiator) {
+        if (activeApprovalOps.containsKey(documentId)) {
+            return Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT));
+        }
+
+        return activeApprovalOps.computeIfAbsent(documentId, key ->
+            documentRepository.findById(documentId)
+                .flatMap(doc -> this.approveDocument(doc, initiator))
+                .onErrorReturn(NotFoundException.class,
+                    new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)
+                )
+                .onErrorReturn(StatusChangeException.class,
+                    new DocumentOpResult(documentId, OperationStatus.CONFLICT)
+                )
+                .doFinally(signalType -> {
+                    log.info("approveDocumentById() >> finished approval on document {}", documentId);
+                    activeApprovalOps.remove(documentId);
+                })
+        );
     }
 }

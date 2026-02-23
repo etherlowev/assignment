@@ -5,7 +5,6 @@ import com.personal.assignment.exception.NotFoundException;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -62,7 +61,8 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     public Mono<Long> updateStatusById(Long documentId, DocumentStatus status) {
         return template.update(Query.query(
             Criteria.where(Document.DOCUMENT_ID).is(documentId)),
-            Update.update(Document.DOCUMENT_STATUS, status).set(Document.DOCUMENT_DATE_UPDATED, LocalDate.now()),
+            Update.update(Document.DOCUMENT_STATUS, status)
+                .set(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.now()),
             Document.class
         ).flatMap(num -> num < 1 ?
             Mono.error(new NotFoundException("Document with id %s was not found".formatted(documentId), documentId)) :
