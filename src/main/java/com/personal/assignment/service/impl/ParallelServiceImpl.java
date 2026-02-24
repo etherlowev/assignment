@@ -72,7 +72,6 @@ public class ParallelServiceImpl implements ParallelService {
                             conflictCounter.incrementAndGet();
                             break;
                         default:
-                            log.error(opResult.status().toString());
                             errorCounter.incrementAndGet();
                             break;
                     }

@@ -1,3 +1,7 @@
 package com.personal.assignment.model.request.impl;
 
-public record DocumentSubmissionBody(Long documentId, String initiator) {}
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public record DocumentSubmissionBody(
+    @Schema(description = "Идентификатор документа", example = "1") Long documentId,
+    @Schema(description = "Инициатор отправки на согласование", example = "Иван") String initiator) {}

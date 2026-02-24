@@ -23,3 +23,10 @@ app:
     submit:
       batchSize: ${WORKERS_SUBMIT_BATCH_SIZE:10}
       delay: ${WORKERS_SUBMIT_DELAY:PT50S}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

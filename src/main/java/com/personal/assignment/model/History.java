@@ -6,10 +6,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 
 @Entity
-public class History {
+public class History implements Serializable {
 
     public static final String HISTORY_ID = "id";
     public static final String HISTORY_INITIATOR = "initiator";

@@ -6,6 +6,9 @@ import com.personal.assignment.model.request.impl.BatchDocumentSubmissionBody;
 import com.personal.assignment.model.request.impl.BatchDocumentsBody;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.service.DocumentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +27,13 @@ public class DocumentBatchController {
         this.documentService = documentService;
     }
 
+    @Operation(summary = "Создание пачки документов",
+        description = "Создание пачки документов"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Успешно созданы"),
+        @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
+    })
     @PostMapping("/create")
     public Mono<ResponseEntity<List<Document>>> creatBatch(@RequestBody BatchDocumentsBody body) {
         if (body.author() == null || body.titles() == null || body.titles().isEmpty()) {
@@ -35,6 +45,13 @@ public class DocumentBatchController {
             .map(documents -> ResponseEntity.ok().body(documents));
     }
 
+    @Operation(summary = "Отправка пачки документов на согласование",
+        description = "Отправка пачки документов на согласование"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Успешно отправлено"),
+        @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
+    })
     @PostMapping("/submit")
     public Mono<ResponseEntity<List<DocumentOpResult>>> submitDocument(@RequestBody BatchDocumentSubmissionBody body) {
 

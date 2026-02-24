@@ -5,10 +5,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 
 @Entity
-public class Approval {
+public class Approval implements Serializable {
 
     public static final String APPROVAL_ID = "id";
     public static final String APPROVAL_DOCUMENT_ID = "documentId";

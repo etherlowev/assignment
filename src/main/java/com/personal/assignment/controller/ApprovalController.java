@@ -5,6 +5,9 @@ import com.personal.assignment.model.Approval;
 import com.personal.assignment.model.request.impl.BatchDocumentSubmissionBody;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.service.ApprovalService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +32,25 @@ public class ApprovalController {
         this.approvalService = approvalService;
     }
 
+    @Operation(summary = "Вывести список утверждений", description = "Возвращает список утверждений")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Успешно выведен список утверждений"),
+        @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
+    })
     @GetMapping("/list")
-    public Mono<ResponseEntity<List<Approval>>> approve() {
+    public Mono<ResponseEntity<List<Approval>>> listApprovals() {
         return approvalService.getApprovals()
             .collectList()
             .map(ResponseEntity::ok);
     }
 
+    @Operation(summary = "Утверждение пачки документов",
+        description = "Возвращает список результатов утверждений по документам"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Операция выполнена"),
+        @ApiResponse(responseCode = "500", description = "Неизвестная ошибка")
+    })
     @PostMapping("/approve")
     public Mono<ResponseEntity<List<DocumentOpResult>>> approveDocument(@RequestBody
                                                                         BatchDocumentSubmissionBody body) {
