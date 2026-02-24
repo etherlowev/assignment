@@ -6,8 +6,6 @@ import com.personal.assignment.service.ParallelService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -17,8 +15,6 @@ import reactor.core.publisher.Mono;
 public class ParallelServiceImpl implements ParallelService {
 
     private final ApprovalService approvalService;
-
-    private final Logger log = LoggerFactory.getLogger(ParallelServiceImpl.class);
 
     public ParallelServiceImpl(@Autowired ApprovalService approvalService) {
         this.approvalService = approvalService;
