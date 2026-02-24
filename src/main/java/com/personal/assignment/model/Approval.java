@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -15,14 +16,20 @@ public class Approval {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private final Long id;
+    private Long id;
 
-    private final Long documentId;
+    @Version
+    private Long version;
 
-    private final ZonedDateTime approvalDate;
+    private Long documentId;
 
-    public Approval(Long id, Long documentId, ZonedDateTime approvalDate) {
+    private ZonedDateTime approvalDate;
+
+    public Approval() {}
+
+    public Approval(Long id, Long version, Long documentId, ZonedDateTime approvalDate) {
         this.id = id;
+        this.version = version;
         this.documentId = documentId;
         this.approvalDate = approvalDate;
     }
@@ -31,11 +38,31 @@ public class Approval {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
     public Long getDocumentId() {
         return documentId;
     }
 
+    public void setDocumentId(Long documentId) {
+        this.documentId = documentId;
+    }
+
     public ZonedDateTime getApprovalDate() {
         return approvalDate;
+    }
+
+    public void setApprovalDate(ZonedDateTime approvalDate) {
+        this.approvalDate = approvalDate;
     }
 }

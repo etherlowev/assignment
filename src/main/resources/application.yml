@@ -6,6 +6,8 @@ spring:
     url: r2dbc:postgresql://localhost:5432/document?currentSchema=public
     username: docs
     password: pass
+    pool:
+      max-size: 10
   liquibase:
     enabled: true
     change-log: classpath:db/master.xml

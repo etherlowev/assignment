@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -18,19 +19,26 @@ public class History {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private final Long id;
+    private Long id;
 
-    private final String initiator;
+    @Version
+    private Long version;
 
-    private final ZonedDateTime actionDate;
+    private String initiator;
 
-    private final Long documentId;
+    private ZonedDateTime actionDate;
 
-    private final DocumentAction documentAction;
+    private Long documentId;
 
-    public History(Long id, String initiator, ZonedDateTime actionDate,
-                   Long documentId, DocumentAction documentAction) {
+    private DocumentAction documentAction;
+
+    public History() {}
+
+    public History(Long id, Long version, String initiator, ZonedDateTime actionDate,
+                   Long documentId,
+                   DocumentAction documentAction) {
         this.id = id;
+        this.version = version;
         this.initiator = initiator;
         this.actionDate = actionDate;
         this.documentId = documentId;
@@ -41,20 +49,48 @@ public class History {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
     public String getInitiator() {
         return initiator;
+    }
+
+    public void setInitiator(String initiator) {
+        this.initiator = initiator;
     }
 
     public ZonedDateTime getActionDate() {
         return actionDate;
     }
 
+    public void setActionDate(ZonedDateTime actionDate) {
+        this.actionDate = actionDate;
+    }
+
     public Long getDocumentId() {
         return documentId;
     }
 
+    public void setDocumentId(Long documentId) {
+        this.documentId = documentId;
+    }
+
     public DocumentAction getDocumentAction() {
         return documentAction;
+    }
+
+    public void setDocumentAction(DocumentAction documentAction) {
+        this.documentAction = documentAction;
     }
 
     public static Builder builder() {
@@ -63,6 +99,8 @@ public class History {
 
     public static class Builder {
         private Long id;
+
+        private Long version;
 
         private String initiator;
 
@@ -74,6 +112,11 @@ public class History {
 
         public Builder id(Long id) {
             this.id = id;
+            return this;
+        }
+
+        public Builder version(Long version) {
+            this.version = version;
             return this;
         }
 
@@ -100,6 +143,7 @@ public class History {
         public static Builder of(History history) {
             return new Builder()
                 .id(history.getId())
+                .version(history.getVersion())
                 .initiator(history.getInitiator())
                 .actionDate(history.getActionDate())
                 .documentId(history.getDocumentId())
@@ -107,7 +151,7 @@ public class History {
         }
 
         public History build() {
-            return new History(id, initiator, actionDate, documentId, documentAction);
+            return new History(id, version, initiator, actionDate, documentId, documentAction);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.personal.assignment.repository.impl;
 
 import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.exception.NotFoundException;
+import com.personal.assignment.exception.StatusChangeException;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
@@ -59,15 +60,25 @@ public class DocumentRepositoryImpl implements DocumentRepository {
 
     @Override
     public Mono<Long> updateStatusById(Long documentId, DocumentStatus status) {
-        return template.update(Query.query(
-            Criteria.where(Document.DOCUMENT_ID).is(documentId)),
-            Update.update(Document.DOCUMENT_STATUS, status)
-                .set(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.now()),
-            Document.class
-        ).flatMap(num -> num < 1 ?
-            Mono.error(new NotFoundException("Document with id %s was not found".formatted(documentId), documentId)) :
-            Mono.just(num)
-        );
+        return template.selectOne(Query.query(Criteria.where(Document.DOCUMENT_ID).is(documentId)), Document.class)
+            .switchIfEmpty(Mono.error(new NotFoundException("Document with id %s was not found"
+                .formatted(documentId), documentId))
+            )
+            .flatMap(document -> document.getStatus() == status ?
+                Mono.error(new StatusChangeException("Status is already set", documentId)) :
+                Mono.just(document)
+            )
+            .flatMap(document -> template.update(
+                    Query.query(
+                        Criteria.where(Document.DOCUMENT_ID).is(documentId)
+                            .and(Document.DOCUMENT_VERSION).is(document.getVersion())
+                    ),
+                    Update.update(Document.DOCUMENT_STATUS, status)
+                        .set(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.now())
+                        .set(Document.DOCUMENT_VERSION, document.getVersion()+1L),
+                    Document.class
+                )
+            );
     }
 
     @Override

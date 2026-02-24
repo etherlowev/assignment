@@ -76,7 +76,6 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Mono<DocumentOpResult> submitDocumentById(Long documentId, String initiator) {
-        log.info("submitDocumentById() >> submitting document {}", documentId);
         return activeSubmissionOps.containsKey(documentId) ?
             Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)) :
             activeSubmissionOps.computeIfAbsent(documentId, key ->
@@ -89,7 +88,6 @@ public class DocumentServiceImpl implements DocumentService {
                         ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)))
                     .onErrorResume(Throwable.class,
                         ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.ERROR)))
-                    .doFinally(signalType -> log.info("submitDocumentById() >> document {}", documentId))
         );
     }
 
@@ -103,11 +101,14 @@ public class DocumentServiceImpl implements DocumentService {
         long startTime = System.currentTimeMillis();
 
         return Flux.fromIterable(documentIds)
-            .flatMap(documentId -> this.submitDocumentById(documentId, initiator)
-                .doOnNext(ignored -> log.info("submitBatch() >> Submission progress {}/{}", progress.incrementAndGet(), size)))
-            .doOnComplete(() -> log.info("submitBatch() >> Finished batch submission on {} objects, finished in {} ms",
-                documentIds.size(),
-                System.currentTimeMillis() - startTime));
+            .flatMap(documentId -> this.submitDocumentById(documentId, initiator))
+            .doOnNext(ignored -> log.info("submitBatch() >> Submission progress {}/{}",
+                progress.incrementAndGet(), size)
+            )
+            .doFinally(signal ->
+                log.info("submitBatch() >> finished submission of {} documents, completed in {} ms",
+                    documentIds.size(), System.currentTimeMillis() - startTime
+            ));
     }
 
     @Override
@@ -124,7 +125,6 @@ public class DocumentServiceImpl implements DocumentService {
         return documentRepository.getPage(filteredPaging.getCriteria(), filteredPaging.getPaging());
     }
 
-    @Transactional
     protected Mono<DocumentOpResult> submitDocument(Document doc, String initiator) {
         if (doc.getStatus() != DocumentStatus.DRAFT) {
             return Mono.error(

@@ -5,12 +5,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import java.time.ZonedDateTime;
 
 @Entity
 public class Document {
 
     public static final String DOCUMENT_ID = "id";
+    public static final String DOCUMENT_VERSION = "version";
     public static final String DOCUMENT_NUMBER = "number";
     public static final String DOCUMENT_AUTHOR = "author";
     public static final String DOCUMENT_TITLE = "title";
@@ -20,25 +22,30 @@ public class Document {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private final Long id;
+    private Long id;
+
+    @Version
+    private Long version;
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private final Long number;
+    private Long number;
 
-    private final String author;
+    private String author;
 
-    private final String title;
+    private String title;
 
-    private final DocumentStatus status;
+    private DocumentStatus status;
 
-    private final ZonedDateTime dateCreated;
+    private ZonedDateTime dateCreated;
 
-    private final ZonedDateTime dateUpdated;
+    private ZonedDateTime dateUpdated;
 
-    public Document(Long id, Long number, String author,
-                    String title, DocumentStatus status,
-                    ZonedDateTime dateCreated, ZonedDateTime dateUpdated) {
+    public Document() {}
+
+    public Document(Long id, Long version, Long number, String author, String title,
+                    DocumentStatus status, ZonedDateTime dateCreated, ZonedDateTime dateUpdated) {
         this.id = id;
+        this.version = version;
         this.number = number;
         this.author = author;
         this.title = title;
@@ -51,28 +58,64 @@ public class Document {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
     public Long getNumber() {
         return number;
+    }
+
+    public void setNumber(Long number) {
+        this.number = number;
     }
 
     public String getAuthor() {
         return author;
     }
 
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
     public String getTitle() {
         return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public DocumentStatus getStatus() {
         return status;
     }
 
+    public void setStatus(DocumentStatus status) {
+        this.status = status;
+    }
+
     public ZonedDateTime getDateCreated() {
         return dateCreated;
     }
 
+    public void setDateCreated(ZonedDateTime dateCreated) {
+        this.dateCreated = dateCreated;
+    }
+
     public ZonedDateTime getDateUpdated() {
         return dateUpdated;
+    }
+
+    public void setDateUpdated(ZonedDateTime dateUpdated) {
+        this.dateUpdated = dateUpdated;
     }
 
     public static Builder builder() {
@@ -81,6 +124,7 @@ public class Document {
 
     public static class Builder {
         private Long id;
+        private Long version;
         private Long number;
         private String author;
         private String title;
@@ -92,14 +136,22 @@ public class Document {
             this.id = id;
             return this;
         }
+
+        public Builder version(Long version) {
+            this.version = version;
+            return this;
+        }
+
         public Builder number(Long number) {
             this.number = number;
             return this;
         }
+
         public Builder author(String author) {
             this.author = author;
             return this;
         }
+
         public Builder title(String title) {
             this.title = title;
             return this;
@@ -123,6 +175,7 @@ public class Document {
         public static Builder of(Document document) {
             return new Builder()
                 .id(document.getId())
+                .version(document.getVersion())
                 .number(document.getNumber())
                 .author(document.getAuthor())
                 .title(document.getTitle())
@@ -132,7 +185,7 @@ public class Document {
         }
 
         public Document build() {
-            return new Document(id, number, author, title, status, dateCreated, dateUpdated);
+            return new Document(id, version, number, author, title, status, dateCreated, dateUpdated);
         }
     }
 }
