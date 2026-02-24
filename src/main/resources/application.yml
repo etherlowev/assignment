@@ -2,25 +2,24 @@ spring:
   main:
     banner-mode: off
   r2dbc:
-    name: docs
-    url: r2dbc:postgresql://localhost:5432/document?currentSchema=public
-    username: docs
-    password: pass
+    url: r2dbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DB:document}?currentSchema=${PG_SCHEMA:public}
+    username: ${PG_USER:docs}
+    password: ${PG_PASS:pass}
     pool:
       max-size: 10
   liquibase:
     enabled: true
     change-log: classpath:db/master.xml
-    url: jdbc:postgresql://localhost:5432/document?currentSchema=public
-    user: docs
-    password: pass
+    url: jdbc:postgresql://${PG_HOST:localhost}:${PG_PORT:5432}/${PG_DB:document}?currentSchema=${PG_SCHEMA:public}
+    user: ${PG_USER:docs}
+    password: ${PG_PASS:pass}
 
 app:
   worker:
-    enabled: true
+    enabled: ${WORKERS_ENABLED:true}
     approve:
-      batchSize: 10
-      delay: PT50S
+      batchSize: ${WORKERS_APPROVE_BATCH_SIZE:10}
+      delay: ${WORKERS_APPROVE_DELAY:PT50S}
     submit:
-      batchSize: 10
-      delay: PT50S
+      batchSize: ${WORKERS_SUBMIT_BATCH_SIZE:10}
+      delay: ${WORKERS_SUBMIT_DELAY:PT50S}
