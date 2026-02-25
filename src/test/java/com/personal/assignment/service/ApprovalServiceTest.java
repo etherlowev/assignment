@@ -109,8 +109,8 @@ public class ApprovalServiceTest {
 
         DocumentWithHistory dwh = documentService.getDocumentById(document.getId()).block();
         assertNotNull(dwh);
-        assertNotNull(dwh.getDocument());
-        assertEquals(DocumentStatus.APPROVED, dwh.getDocument().getStatus());
+        assertNotNull(dwh.document());
+        assertEquals(DocumentStatus.APPROVED, dwh.document().getStatus());
     }
 
     @Test

@@ -71,7 +71,7 @@ public class DocumentServiceTest {
 
         DocumentWithHistory dwh = documentService.getDocumentById(document.getId()).block();
         assertNotNull(dwh);
-        Document pulledDocument = dwh.getDocument();
+        Document pulledDocument = dwh.document();
         assertEquals(pulledDocument.getAuthor(), author);
         assertEquals(pulledDocument.getTitle(), title);
     }
@@ -95,8 +95,8 @@ public class DocumentServiceTest {
 
         DocumentWithHistory dwh = documentService.getDocumentById(document.getId()).block();
         assertNotNull(dwh);
-        assertNotNull(dwh.getDocument());
-        assertEquals(DocumentStatus.SUBMITTED, dwh.getDocument().getStatus());
+        assertNotNull(dwh.document());
+        assertEquals(DocumentStatus.SUBMITTED, dwh.document().getStatus());
     }
 
     @Test
@@ -130,7 +130,7 @@ public class DocumentServiceTest {
 
         assertNotNull(docWIthHistory);
 
-        document = docWIthHistory.getDocument();
+        document = docWIthHistory.document();
         assertEquals(DocumentStatus.SUBMITTED, document.getStatus());
 
         List<History> histories = historyService.getHistory(document.getId()).collectList().block();
@@ -143,7 +143,7 @@ public class DocumentServiceTest {
         assertEquals(OperationStatus.SUCCESS, approveRes.status());
 
         document = Objects.requireNonNull(documentService.getDocumentById(document.getId()).block())
-            .getDocument();
+            .document();
 
         assertEquals(DocumentStatus.APPROVED, document.getStatus());
 

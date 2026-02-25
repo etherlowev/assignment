@@ -18,9 +18,9 @@
 
 # Как запускать
 
-1. Запускаются `mvn test` 
+1. Запускаются тесты `mvnw.cmd` или `mvn test -Dtest="TestSuite"` 
 2. Поднимаются контейнеры `docker compose up -d`
-3. Запускается сервис `mvn spring-boot:run`
+3. Запускается сервис `mvnw.cmd` или `mvn spring-boot:run`
 4. Схемы базы данных загрузятся автоматически
 
 
