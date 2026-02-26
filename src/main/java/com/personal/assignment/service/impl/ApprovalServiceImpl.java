@@ -80,8 +80,9 @@ public class ApprovalServiceImpl implements ApprovalService {
                     new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
                 .onErrorReturn(StatusChangeException.class,
                     new DocumentOpResult(documentId, OperationStatus.CONFLICT))
-                .onErrorReturn(Exception.class,
-                    new DocumentOpResult(documentId, OperationStatus.ERROR))
+                .onErrorReturn(
+                    new DocumentOpResult(documentId, OperationStatus.ERROR)
+                )
             )
             .singleOrEmpty();
     }

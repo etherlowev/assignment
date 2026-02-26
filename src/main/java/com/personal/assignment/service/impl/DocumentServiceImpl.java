@@ -22,11 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@Transactional
 public class DocumentServiceImpl implements DocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentServiceImpl.class);
@@ -35,12 +36,17 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final HistoryRepository historyRepository;
 
+    private final TransactionalOperator transactionalOperator;
+
     public DocumentServiceImpl(@Autowired DocumentRepository documentRepository,
-                               @Autowired HistoryRepository historyRepository) {
+                               @Autowired HistoryRepository historyRepository,
+                               @Autowired ReactiveTransactionManager txManager) {
         this.documentRepository = documentRepository;
         this.historyRepository = historyRepository;
+        this.transactionalOperator = TransactionalOperator.create(txManager);
     }
 
+    @Transactional
     @Override
     public Mono<Document> createDocument(String author, String title) {
         log.info("Creating document {} by {}", title, author);
@@ -54,6 +60,7 @@ public class DocumentServiceImpl implements DocumentService {
         );
     }
 
+    @Transactional
     @Override
     public Flux<Document> createDocumentBatch(String author, List<String> titles) {
         log.info("createDocumentBatch() >> Creating {} documents", titles.size());
@@ -74,15 +81,17 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Mono<DocumentOpResult> submitDocumentById(Long documentId, String initiator) {
-        return documentRepository.findById(documentId)
-            .flatMap(doc -> submitDocument(doc, initiator)
-                .onErrorReturn(NotFoundException.class,
-                    new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
-                .onErrorReturn(StatusChangeException.class,
-                    new DocumentOpResult(documentId, OperationStatus.CONFLICT))
-                .onErrorReturn(Throwable.class,
-                    new DocumentOpResult(documentId, OperationStatus.ERROR))
-            );
+        return transactionalOperator.execute(tx ->
+                submitDocument(documentId, initiator)
+                    .doOnError(ex -> tx.setRollbackOnly())
+                    .onErrorReturn(NotFoundException.class,
+                        new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
+                    .onErrorReturn(StatusChangeException.class,
+                        new DocumentOpResult(documentId, OperationStatus.CONFLICT))
+                    .onErrorReturn(Throwable.class,
+                        new DocumentOpResult(documentId, OperationStatus.ERROR))
+            )
+            .singleOrEmpty();
     }
 
     @Override
@@ -95,7 +104,16 @@ public class DocumentServiceImpl implements DocumentService {
         long startTime = System.currentTimeMillis();
 
         return Flux.fromIterable(documentIds)
-            .flatMap(documentId -> this.submitDocumentById(documentId, initiator))
+            .flatMap(documentId -> transactionalOperator.execute(tx ->
+                this.submitDocument(documentId, initiator)
+                    .doOnError(ex -> tx.setRollbackOnly())
+                    .onErrorReturn(NotFoundException.class,
+                        new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
+                    .onErrorReturn(StatusChangeException.class,
+                        new DocumentOpResult(documentId, OperationStatus.CONFLICT))
+                    .onErrorReturn(Throwable.class,
+                        new DocumentOpResult(documentId, OperationStatus.ERROR)))
+            )
             .doOnNext(ignored -> log.info("submitBatch() >> Submission progress {}/{}",
                 progress.incrementAndGet(), size)
             )
@@ -119,21 +137,30 @@ public class DocumentServiceImpl implements DocumentService {
         return documentRepository.getPage(filteredPaging.getCriteria(), filteredPaging.getPaging());
     }
 
-    protected Mono<DocumentOpResult> submitDocument(Document doc, String initiator) {
-        if (doc.getStatus() != DocumentStatus.DRAFT) {
-            return Mono.error(
-                new StatusChangeException("Can't submit document %s".formatted(doc.getId()), doc.getId())
-            );
-        }
-        return documentRepository.updateStatusById(doc.getId(), DocumentStatus.SUBMITTED)
-            .then(historyRepository.save(
-                History.builder()
-                    .initiator(initiator)
-                    .documentId(doc.getId())
-                    .documentAction(DocumentAction.SUBMIT)
-                    .actionDate(ZonedDateTime.now())
-                    .build())
-            )
-            .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
+    protected Mono<DocumentOpResult> submitDocument(Long documentId, String initiator) {
+        return documentRepository.findById(documentId)
+            .flatMap(document -> {
+                if (document.getStatus() != DocumentStatus.DRAFT) {
+                    return Mono.error(
+                        new StatusChangeException("Can't submit document %s"
+                            .formatted(document.getId()), document.getId())
+                    );
+                }
+                return Mono.just(document);
+            })
+            .flatMap(document -> documentRepository.updateStatusById(
+                    document.getId(),
+                    DocumentStatus.SUBMITTED
+                )
+                .then(historyRepository.save(
+                    History.builder()
+                        .initiator(initiator)
+                        .documentId(document.getId())
+                        .documentAction(DocumentAction.SUBMIT)
+                        .actionDate(ZonedDateTime.now())
+                        .build()
+                    )
+                )
+                .thenReturn(new DocumentOpResult(document.getId(), OperationStatus.SUCCESS)));
     }
 }

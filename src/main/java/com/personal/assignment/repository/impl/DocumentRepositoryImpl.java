@@ -80,6 +80,12 @@ public class DocumentRepositoryImpl implements DocumentRepository {
                         .set(Document.DOCUMENT_VERSION, document.getVersion()+1L),
                     Document.class
                 )
+            )
+            .flatMap(rowsChanged -> rowsChanged < 1 ?
+                Mono.error(new StatusChangeException("Could not change status of document with id %s"
+                    .formatted(documentId), documentId)
+                ) :
+                Mono.just(rowsChanged)
             );
     }
 
@@ -90,7 +96,7 @@ public class DocumentRepositoryImpl implements DocumentRepository {
                 INSERT INTO document
                 (author, title, status, date_created, date_updated)
                 VALUES (:author, :title, :status, :date_created, :date_updated)
-                RETURNING id, number, author, title, status, date_created, date_updated""");
+                RETURNING id, number, author, title, status, date_created, date_updated, version""");
 
         spec = bindNullable(spec, Document.DOCUMENT_AUTHOR, document.getAuthor(), String.class);
         spec = bindNullable(spec, Document.DOCUMENT_TITLE, document.getTitle(), String.class);
@@ -115,6 +121,7 @@ public class DocumentRepositoryImpl implements DocumentRepository {
             )
             .dateCreated(row.get(Document.DOCUMENT_DATE_CREATED, ZonedDateTime.class))
             .dateUpdated(row.get(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.class))
+            .version(row.get(Document.DOCUMENT_VERSION, Long.class))
             .build();
     }
 
