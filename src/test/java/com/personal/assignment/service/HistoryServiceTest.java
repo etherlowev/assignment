@@ -41,9 +41,15 @@ public class HistoryServiceTest {
 
     @Test
     public void createHistoryEntry() {
-
-        Document doc = documentRepository.insertDocument("author", "title", DocumentStatus.APPROVED,
-            ZonedDateTime.now(), null).block();
+        Document doc = documentRepository.save(
+            Document.builder()
+                .author("author")
+                .title("title")
+                .status(DocumentStatus.APPROVED)
+                .dateCreated(ZonedDateTime.now())
+                .build()
+            )
+            .block();
 
         assertNotNull(doc);
 

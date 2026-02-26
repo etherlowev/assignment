@@ -6,6 +6,7 @@ import com.personal.assignment.enums.OperationStatus;
 import com.personal.assignment.exception.NotFoundException;
 import com.personal.assignment.exception.StatusChangeException;
 import com.personal.assignment.filter.impl.DocumentFilteredPaging;
+import com.personal.assignment.model.History;
 import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import com.personal.assignment.repository.DocumentRepository;
@@ -16,7 +17,6 @@ import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @Transactional
@@ -36,8 +35,6 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final HistoryRepository historyRepository;
 
-    private final ConcurrentHashMap<Long, Mono<DocumentOpResult>> activeSubmissionOps = new ConcurrentHashMap<>();
-
     public DocumentServiceImpl(@Autowired DocumentRepository documentRepository,
                                @Autowired HistoryRepository historyRepository) {
         this.documentRepository = documentRepository;
@@ -47,12 +44,13 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public Mono<Document> createDocument(String author, String title) {
         log.info("Creating document {} by {}", title, author);
-        return documentRepository.insertDocument(
-            author,
-            title,
-            DocumentStatus.DRAFT,
-            ZonedDateTime.now(),
-            null
+        return documentRepository.save(
+            Document.builder()
+                .author(author)
+                .title(title)
+                .status(DocumentStatus.DRAFT)
+                .dateCreated(ZonedDateTime.now())
+                .build()
         );
     }
 
@@ -76,19 +74,15 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public Mono<DocumentOpResult> submitDocumentById(Long documentId, String initiator) {
-        return activeSubmissionOps.containsKey(documentId) ?
-            Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)) :
-            activeSubmissionOps.computeIfAbsent(documentId, key ->
-                documentRepository.findById(documentId)
-                    .publishOn(Schedulers.boundedElastic())
-                    .flatMap(doc -> submitDocument(doc, initiator))
-                    .onErrorResume(NotFoundException.class,
-                        ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)))
-                    .onErrorResume(StatusChangeException.class,
-                        ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.CONFLICT)))
-                    .onErrorResume(Throwable.class,
-                        ex -> Mono.just(new DocumentOpResult(documentId, OperationStatus.ERROR)))
-        );
+        return documentRepository.findById(documentId)
+            .flatMap(doc -> submitDocument(doc, initiator)
+                .onErrorReturn(NotFoundException.class,
+                    new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
+                .onErrorReturn(StatusChangeException.class,
+                    new DocumentOpResult(documentId, OperationStatus.CONFLICT))
+                .onErrorReturn(Throwable.class,
+                    new DocumentOpResult(documentId, OperationStatus.ERROR))
+            );
     }
 
     @Override
@@ -132,7 +126,14 @@ public class DocumentServiceImpl implements DocumentService {
             );
         }
         return documentRepository.updateStatusById(doc.getId(), DocumentStatus.SUBMITTED)
-            .then(historyRepository.createHistoryEntry(initiator, doc.getId(), DocumentAction.SUBMIT))
+            .then(historyRepository.save(
+                History.builder()
+                    .initiator(initiator)
+                    .documentId(doc.getId())
+                    .documentAction(DocumentAction.SUBMIT)
+                    .actionDate(ZonedDateTime.now())
+                    .build())
+            )
             .thenReturn(new DocumentOpResult(doc.getId(), OperationStatus.SUCCESS));
     }
 }

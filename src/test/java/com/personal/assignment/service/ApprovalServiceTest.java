@@ -10,12 +10,10 @@ import static org.mockito.Mockito.doAnswer;
 import com.personal.assignment.configuration.TestcontainersConfiguration;
 import com.personal.assignment.enums.DocumentAction;
 import com.personal.assignment.enums.DocumentStatus;
-import com.personal.assignment.enums.OperationStatus;
 import com.personal.assignment.exception.NotFoundException;
 import com.personal.assignment.filter.impl.DocumentFilteredPaging;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.History;
-import com.personal.assignment.model.response.DocumentOpResult;
 import com.personal.assignment.model.response.DocumentWithHistory;
 import com.personal.assignment.repository.ApprovalRepository;
 import com.personal.assignment.repository.DocumentRepository;
@@ -24,8 +22,6 @@ import com.personal.assignment.service.impl.ApprovalServiceImpl;
 import com.personal.assignment.service.impl.DocumentServiceImpl;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.InjectMocks;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,19 +43,19 @@ import reactor.core.publisher.Mono;
 @ExtendWith(MockitoExtension.class)
 public class ApprovalServiceTest {
 
-    @InjectMocks
+    @Autowired
     private DocumentServiceImpl documentService;
 
-    @InjectMocks
+    @Autowired
     private ApprovalServiceImpl approvalService;
 
-    @MockitoSpyBean
+    @Autowired
     private DocumentRepository documentRepository;
 
     @MockitoSpyBean
     private HistoryRepository historyRepository;
 
-    @MockitoSpyBean
+    @Autowired
     private ApprovalRepository approvalRepository;
 
     @Autowired
@@ -73,29 +69,11 @@ public class ApprovalServiceTest {
             .then()
             .block();
 
-        databaseClient.sql("DELETE FROM document")
-            .then()
-            .block();
+        documentRepository.deleteAll().block();
     }
 
     @AfterEach
     public void tearDown() {}
-
-    @Test
-    public void createApprovalEntry() {
-        Document doc = documentRepository.insertDocument(
-            "a",
-            "b",
-            DocumentStatus.DRAFT,
-            ZonedDateTime.now(),
-            null
-        ).block();
-
-        assertNotNull(doc);
-        DocumentOpResult result = approvalService.createApprovalEntry(doc.getId()).block();
-        assertNotNull(result);
-        assertEquals(result.status(), OperationStatus.SUCCESS);
-    }
 
     @Test
     public void approveDocumentById() {
@@ -145,7 +123,7 @@ public class ApprovalServiceTest {
             History input = invocation.getArgument(0);
 
             if (input.getDocumentId() > 50) {
-                throw new NotFoundException("error", input.getDocumentId());
+                return Mono.error(new NotFoundException("error", input.getDocumentId()));
             }
 
             History savedHistory = History.Builder.of(input).id(historyId.incrementAndGet()).build();

@@ -3,7 +3,6 @@ package com.personal.assignment.repository;
 import com.personal.assignment.enums.DocumentStatus;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
-import java.time.ZonedDateTime;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -13,11 +12,7 @@ import reactor.core.publisher.Mono;
 public interface DocumentRepository {
     Mono<Long> updateStatusById(Long documentId, DocumentStatus status);
 
-    Mono<Document> insertDocument(String author,
-                                  String title,
-                                  DocumentStatus status,
-                                  ZonedDateTime dateCreated,
-                                  ZonedDateTime dateUpdated);
+    Mono<Document> save(Document document);
 
     Flux<Document> getPage(Criteria criteria, Paging paging);
 

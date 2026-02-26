@@ -5,6 +5,7 @@ import com.personal.assignment.model.History;
 import com.personal.assignment.repository.HistoryRepository;
 import com.personal.assignment.service.HistoryService;
 import jakarta.transaction.Transactional;
+import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +28,13 @@ public class HistoryServiceImpl implements HistoryService {
     @Override
     public Mono<History> createHistoryEntry(String initiator, Long documentId, DocumentAction action) {
         log.info("createHistoryEntry() >> Creating history entry for document {}", documentId);
-        return historyRepository.createHistoryEntry(
-            initiator,
-            documentId,
-            action
+        return historyRepository.save(
+            History.builder()
+                .initiator(initiator)
+                .documentId(documentId)
+                .documentAction(action)
+                .actionDate(ZonedDateTime.now())
+                .build()
         );
     }
 

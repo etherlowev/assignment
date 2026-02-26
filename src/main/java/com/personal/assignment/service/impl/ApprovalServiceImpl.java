@@ -12,7 +12,6 @@ import com.personal.assignment.repository.ApprovalRepository;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.repository.HistoryRepository;
 import com.personal.assignment.service.ApprovalService;
-import jakarta.transaction.Transactional;
 import java.time.ZonedDateTime;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,11 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@Transactional
 public class ApprovalServiceImpl implements ApprovalService {
 
     private final ApprovalRepository approvalRepository;
@@ -33,23 +33,18 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     private final HistoryRepository historyRepository;
 
+    private final TransactionalOperator transactionalOperator;
+
     private final Logger log = LoggerFactory.getLogger(ApprovalServiceImpl.class);
 
     public ApprovalServiceImpl(@Autowired ApprovalRepository approvalRepository,
                                @Autowired DocumentRepository documentRepository,
-                               @Autowired HistoryRepository historyRepository) {
+                               @Autowired HistoryRepository historyRepository,
+                               @Autowired ReactiveTransactionManager txManager) {
         this.approvalRepository = approvalRepository;
         this.documentRepository = documentRepository;
         this.historyRepository = historyRepository;
-    }
-
-    @Override
-    public Mono<DocumentOpResult> createApprovalEntry(Long documentId) {
-        log.info("createApprovalEntry() >> creating approval entry for document {}", documentId);
-        return approvalRepository.insertApproval(documentId, ZonedDateTime.now())
-            .thenReturn(new DocumentOpResult(documentId, OperationStatus.SUCCESS))
-            .onErrorReturn(NotFoundException.class, new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
-            .onErrorReturn(StatusChangeException.class, new DocumentOpResult(documentId, OperationStatus.CONFLICT));
+        this.transactionalOperator = TransactionalOperator.create(txManager);
     }
 
     @Override
@@ -60,7 +55,14 @@ public class ApprovalServiceImpl implements ApprovalService {
         long startTime = System.currentTimeMillis();
 
         return Flux.fromIterable(documentIds)
-            .flatMap(documentId -> approveDocument(documentId, initiator))
+            .flatMap(documentId -> transactionalOperator.execute(
+                tx -> approveDocument(documentId, initiator)
+                    .doOnError(ex -> tx.setRollbackOnly())
+                    .onErrorReturn(NotFoundException.class, new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
+                    .onErrorReturn(StatusChangeException.class, new DocumentOpResult(documentId, OperationStatus.CONFLICT))
+                    .onErrorReturn(Exception.class, new DocumentOpResult(documentId, OperationStatus.ERROR))
+                ).singleOrEmpty()
+            )
             .doOnNext(ignored -> log.info("approveBatch() >> Approval progress {}/{}", progress.incrementAndGet(), size))
             .doOnComplete(() ->
                 log.info("approveBatch() >> finished approval of {} documents, completed in {} ms",
@@ -71,7 +73,17 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Override
     public Mono<DocumentOpResult> approveDocumentById(Long documentId, String initiator) {
         log.info("approveDocumentById() >> beginning operation on document {}", documentId);
-        return approveDocument(documentId, initiator);
+        return transactionalOperator
+            .execute(tx -> approveDocument(documentId, initiator)
+                .doOnError(ex -> tx.setRollbackOnly())
+                .onErrorReturn(NotFoundException.class,
+                    new DocumentOpResult(documentId, OperationStatus.NOT_FOUND))
+                .onErrorReturn(StatusChangeException.class,
+                    new DocumentOpResult(documentId, OperationStatus.CONFLICT))
+                .onErrorReturn(Exception.class,
+                    new DocumentOpResult(documentId, OperationStatus.ERROR))
+            )
+            .singleOrEmpty();
     }
 
     @Override
@@ -81,28 +93,13 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     protected Mono<DocumentOpResult> approveDocument(Long documentId, String initiator) {
         return documentRepository.updateStatusById(documentId, DocumentStatus.APPROVED)
-            .flatMap(rowsChanged -> rowsChanged < 1 ?
-                Mono.error(new StatusChangeException("Could not change status of document with id %s"
-                    .formatted(documentId), documentId)
-                ) :
-                Mono.just(rowsChanged)
+            .then(approvalRepository.insertApproval(documentId, ZonedDateTime.now()))
+            .then(historyRepository.save(History.builder().initiator(initiator)
+                .documentId(documentId)
+                .documentAction(DocumentAction.APPROVE)
+                .actionDate(ZonedDateTime.now())
+                .build())
             )
-            .then(this.createApprovalEntry(documentId))
-            .then(historyRepository.save(History.builder()
-                    .initiator(initiator)
-                    .documentId(documentId)
-                    .documentAction(DocumentAction.APPROVE)
-                    .actionDate(ZonedDateTime.now())
-                    .build()
-                )
-            )
-            .thenReturn(new DocumentOpResult(documentId, OperationStatus.SUCCESS))
-            .onErrorReturn(NotFoundException.class,
-                new DocumentOpResult(documentId, OperationStatus.NOT_FOUND)
-            )
-            .onErrorReturn(StatusChangeException.class,
-                new DocumentOpResult(documentId, OperationStatus.CONFLICT)
-            )
-            .onErrorReturn(Exception.class, new DocumentOpResult(documentId, OperationStatus.ERROR));
+            .thenReturn(new DocumentOpResult(documentId, OperationStatus.SUCCESS));
     }
 }

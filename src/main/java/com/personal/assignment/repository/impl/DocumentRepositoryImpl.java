@@ -6,7 +6,9 @@ import com.personal.assignment.exception.StatusChangeException;
 import com.personal.assignment.repository.DocumentRepository;
 import com.personal.assignment.model.Document;
 import com.personal.assignment.model.request.Paging;
+import io.r2dbc.spi.Readable;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
@@ -82,9 +84,7 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     }
 
     @Override
-    public Mono<Document> insertDocument(String author, String title,
-                                         DocumentStatus status, ZonedDateTime dateCreated,
-                                         ZonedDateTime dateUpdated) {
+    public Mono<Document> save(Document document) {
 
         GenericExecuteSpec spec = databaseClient.sql("""
                 INSERT INTO document
@@ -92,23 +92,30 @@ public class DocumentRepositoryImpl implements DocumentRepository {
                 VALUES (:author, :title, :status, :date_created, :date_updated)
                 RETURNING id, number, author, title, status, date_created, date_updated""");
 
-        spec = bindNullable(spec, Document.DOCUMENT_AUTHOR, author, String.class);
-        spec = bindNullable(spec, Document.DOCUMENT_TITLE, title, String.class);
-        spec = bindNullable(spec, Document.DOCUMENT_STATUS, status.toString(), String.class);
-        spec = bindNullable(spec, Document.DOCUMENT_DATE_CREATED, dateCreated, ZonedDateTime.class);
-        spec = bindNullable(spec, Document.DOCUMENT_DATE_UPDATED, dateUpdated, ZonedDateTime.class);
+        spec = bindNullable(spec, Document.DOCUMENT_AUTHOR, document.getAuthor(), String.class);
+        spec = bindNullable(spec, Document.DOCUMENT_TITLE, document.getTitle(), String.class);
+        spec = bindNullable(spec, Document.DOCUMENT_STATUS,
+            Optional.ofNullable(document.getStatus()).map(Enum::toString).orElse(null), String.class);
 
-        return spec.map(row -> Document.builder()
-                .id(row.get(Document.DOCUMENT_ID, Long.class))
-                .author(row.get(Document.DOCUMENT_AUTHOR, String.class))
-                .number(row.get(Document.DOCUMENT_NUMBER, Long.class))
-                .title(row.get( Document.DOCUMENT_TITLE, String.class))
-                .status(DocumentStatus.valueOf(row.get(Document.DOCUMENT_STATUS, String.class)))
-                .dateCreated(row.get(Document.DOCUMENT_DATE_CREATED, ZonedDateTime.class))
-                .dateUpdated(row.get(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.class))
-                .build()
+        spec = bindNullable(spec, Document.DOCUMENT_DATE_CREATED, document.getDateCreated(), ZonedDateTime.class);
+        spec = bindNullable(spec, Document.DOCUMENT_DATE_UPDATED, document.getDateUpdated(), ZonedDateTime.class);
+
+        return spec.map(this::buildFromRow).one();
+    }
+
+    private Document buildFromRow(Readable row) {
+        return Document.builder()
+            .id(row.get(Document.DOCUMENT_ID, Long.class))
+            .author(row.get(Document.DOCUMENT_AUTHOR, String.class))
+            .number(row.get(Document.DOCUMENT_NUMBER, Long.class))
+            .title(row.get( Document.DOCUMENT_TITLE, String.class))
+            .status(Optional.ofNullable(row.get(Document.DOCUMENT_STATUS, String.class))
+                .map(DocumentStatus::valueOf)
+                .orElse(null)
             )
-            .one();
+            .dateCreated(row.get(Document.DOCUMENT_DATE_CREATED, ZonedDateTime.class))
+            .dateUpdated(row.get(Document.DOCUMENT_DATE_UPDATED, ZonedDateTime.class))
+            .build();
     }
 
     private <T> GenericExecuteSpec bindNullable(GenericExecuteSpec bindspec,

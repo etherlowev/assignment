@@ -7,7 +7,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ApprovalService {
-    Mono<DocumentOpResult> createApprovalEntry(Long documentId);
 
     Mono<DocumentOpResult> approveDocumentById(Long id, String initiator);
 

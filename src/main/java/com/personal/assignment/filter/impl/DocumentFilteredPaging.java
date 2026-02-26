@@ -94,8 +94,8 @@ public class DocumentFilteredPaging extends FilteredPaging {
     }
 
     public static class Builder {
-        private int page;
-        private int perPage;
+        private int page = 1;
+        private int perPage = 10;
         private String sort;
         private Direction direction;
         private List<String> authors;
