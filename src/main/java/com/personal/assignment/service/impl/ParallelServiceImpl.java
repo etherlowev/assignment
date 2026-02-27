@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 public class ParallelServiceImpl implements ParallelService {
@@ -27,7 +28,7 @@ public class ParallelServiceImpl implements ParallelService {
         Integer threads,
         Integer attempts) {
 
-        if (attempts == 0) {
+        if (threads == 0 || attempts == 0) {
             return Mono.just(
                 new ParallelApproveResponse(0L,0L,0L,0L)
             );
@@ -58,6 +59,7 @@ public class ParallelServiceImpl implements ParallelService {
         for (int i = 0 ; i < threads ; i++) {
             monos.add(approvalService.approveDocumentById(documentId, initiator)
                 .repeat(Math.max(attempts-1, 0))
+                .subscribeOn(Schedulers.parallel())
                 .collectList()
                 .doOnNext(list -> list.forEach(opResult -> {
                     switch (opResult.status()) {
